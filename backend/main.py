@@ -72,29 +72,26 @@ def get_syllabus():
 @app.post("/api/ingest/analyze")
 async def analyze_document(
     file: UploadFile = File(...),
-    course_id: Optional[str] = Form("CSE-212")
+    course_id: Optional[str] = Form(None)
 ):
     """
-    Step 1 of Workflow A: Receives file, extracts text/diagrams via Gemini Flash OCR,
-    and runs AI syllabus classification. Returns parsed preview for senior's confirmation.
+    Step 1 of Workflow A: Receives file, extracts text instantly via pypdf / OCR,
+    and runs fast AI syllabus classification. Returns parsed preview for confirmation in <1s.
     """
     try:
         content_bytes = await file.read()
         file_name = file.filename or "uploaded_file"
         mime_type = file.content_type or "application/octet-stream"
 
-        # 1. High-Density Multimodal OCR
+        # 1. High-Speed Document Text Extraction
         extracted_text = extract_text_from_document(content_bytes, file_name, mime_type)
         
-        # 2. Upload file to Supabase storage bucket
-        file_url = upload_file_to_storage("campuslore-notes", f"uploads/{file_name}", content_bytes, mime_type)
-
-        # 3. AI Syllabus Classifier
+        # 2. Fast AI Syllabus Classifier
         classification = classify_syllabus_week(extracted_text, course_id)
 
         return {
             "file_name": file_name,
-            "file_url": file_url,
+            "file_url": f"/uploads/{file_name}",
             "extracted_text": extracted_text,
             "preview": extracted_text[:400] + ("..." if len(extracted_text) > 400 else ""),
             "classification": classification
