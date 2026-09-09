@@ -182,6 +182,8 @@ def get_notes_for_week(
 ):
     """Lists distinct uploaded note files for the selected week."""
     client = get_supabase_client()
+    if not client:
+        return []
     try:
         response = client.table("notes").select("file_name, file_url, topic, created_at").eq("course_id", course_id).eq("week_number", week_number).execute()
         # Deduplicate by file_name

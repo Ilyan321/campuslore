@@ -7,7 +7,7 @@ def semantic_chunk(text: str, max_chars: int = 500, overlap: int = 100) -> List[
     Prioritizes splitting along paragraph breaks, markdown sections, 
     code blocks, or sentence endings to prevent losing context or hallucinating.
     """
-    if not text:
+    if not text or not text.strip():
         return []
     
     cleaned_text = text.strip()

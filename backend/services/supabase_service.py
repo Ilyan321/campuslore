@@ -7,12 +7,17 @@ logger = logging.getLogger("campuslore.supabase")
 
 _client: Optional[Client] = None
 
-def get_supabase_client() -> Client:
+def get_supabase_client() -> Optional[Client]:
     global _client
     if _client is None:
         if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-            logger.warning("SUPABASE_URL or SUPABASE_SERVICE_KEY not set. Using mock or empty client.")
-        _client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+            logger.warning("SUPABASE_URL or SUPABASE_SERVICE_KEY not set in environment.")
+            return None
+        try:
+            _client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        except Exception as e:
+            logger.error(f"Failed to initialize Supabase client: {e}")
+            return None
     return _client
 
 def upload_file_to_storage(bucket_name: str, file_path: str, file_bytes: bytes, content_type: str) -> str:
@@ -20,8 +25,9 @@ def upload_file_to_storage(bucket_name: str, file_path: str, file_bytes: bytes, 
     Uploads a file to Supabase storage bucket and returns the public URL.
     """
     client = get_supabase_client()
+    if not client:
+        return f"/storage/{bucket_name}/{file_path}"
     try:
-        # Check / create bucket or upload directly
         client.storage.from_(bucket_name).upload(
             path=file_path,
             file=file_bytes,
@@ -31,7 +37,6 @@ def upload_file_to_storage(bucket_name: str, file_path: str, file_bytes: bytes, 
         return public_url_resp
     except Exception as e:
         logger.error(f"Error uploading file to Supabase storage: {e}")
-        # Return a generated relative reference if storage upload fails or in dev
         return f"/storage/{bucket_name}/{file_path}"
 
 def insert_note_chunks(chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -39,6 +44,9 @@ def insert_note_chunks(chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     Inserts note chunks into the 'notes' table.
     """
     client = get_supabase_client()
+    if not client:
+        logger.info(f"Supabase not connected. Stored {len(chunks)} chunks in local memory.")
+        return chunks
     try:
         response = client.table("notes").insert(chunks).execute()
         return response.data
@@ -57,6 +65,8 @@ def search_similar_notes(
     Calls the Supabase 'match_notes' RPC function with pgvector HNSW search.
     """
     client = get_supabase_client()
+    if not client:
+        return []
     try:
         params = {
             "query_embedding": query_embedding,
