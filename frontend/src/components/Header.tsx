@@ -1,12 +1,18 @@
 import React from 'react';
-import { UploadCloud, BookOpen } from 'lucide-react';
+import { UploadCloud, BookOpen, Plus, Clock } from 'lucide-react';
 
 interface HeaderProps {
   onOpenUpload: () => void;
+  onOpenHistory: () => void;
+  onNewChat: () => void;
+  sessionCount: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  onOpenUpload
+  onOpenUpload,
+  onOpenHistory,
+  onNewChat,
+  sessionCount
 }) => {
   return (
     <header className="sticky top-0 z-30 w-full border-b border-blueprint-border bg-blueprint-surface/95 px-4 lg:px-6 py-2.5">
@@ -27,14 +33,44 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Action Trigger */}
-        <button
-          onClick={onOpenUpload}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-blueprint-primary hover:bg-white text-blueprint-canvas font-medium text-xs transition duration-150 active:translate-y-px flex-shrink-0"
-        >
-          <UploadCloud className="w-3.5 h-3.5 stroke-[2.2]" />
-          <span>Upload Notes</span>
-        </button>
+        {/* Right Action Controls */}
+        <div className="flex items-center gap-2">
+          
+          {/* New Chat Button */}
+          <button
+            onClick={onNewChat}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded border border-blueprint-border hover:border-blueprint-borderLight hover:bg-blueprint-raised text-blueprint-secondary hover:text-blueprint-primary font-mono text-xs transition duration-150 active:translate-y-px"
+            title="Start a new academic chat session"
+          >
+            <Plus className="w-3.5 h-3.5 text-blueprint-brass stroke-[2.5]" />
+            <span className="hidden sm:inline">New Chat</span>
+          </button>
+
+          {/* History Drawer Trigger */}
+          <button
+            onClick={onOpenHistory}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-blueprint-border hover:border-blueprint-borderLight hover:bg-blueprint-raised text-blueprint-secondary hover:text-blueprint-primary font-mono text-xs transition duration-150 active:translate-y-px"
+            title="Open saved chat sessions"
+          >
+            <Clock className="w-3.5 h-3.5 text-blueprint-brass stroke-[2]" />
+            <span>History</span>
+            {sessionCount > 0 && (
+              <span className="text-[10px] bg-blueprint-raised px-1.5 py-0.2 rounded border border-blueprint-border text-blueprint-primary">
+                {sessionCount}
+              </span>
+            )}
+          </button>
+
+          {/* Upload Notes Button */}
+          <button
+            onClick={onOpenUpload}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-blueprint-primary hover:bg-white text-blueprint-canvas font-medium text-xs transition duration-150 active:translate-y-px flex-shrink-0 ml-1"
+          >
+            <UploadCloud className="w-3.5 h-3.5 stroke-[2.2]" />
+            <span className="hidden sm:inline">Upload Notes</span>
+            <span className="sm:hidden">Upload</span>
+          </button>
+        </div>
 
       </div>
     </header>

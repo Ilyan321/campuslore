@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Course, SyllabusWeek, ChatMessage, NoteSource } from '../types';
+import { Course, SyllabusWeek, ChatMessage, NoteSource, ChatSession } from '../types';
 import { queryRAG } from '../services/api';
 import {
   Send,
@@ -18,6 +18,8 @@ interface ChatInterfaceProps {
   courses: Course[];
   selectedCourseId: string | null;
   selectedWeek: number | null;
+  activeSession: ChatSession | null;
+  onUpdateSessionMessages: (sessionId: string, newMessages: ChatMessage[], title?: string) => void;
   onSelectTopic: (courseId: string | null, week: number | null) => void;
   onOpenSources: (sources: NoteSource[]) => void;
   onOpenUpload: () => void;
@@ -27,11 +29,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   courses,
   selectedCourseId,
   selectedWeek,
+  activeSession,
+  onUpdateSessionMessages,
   onSelectTopic,
   onOpenSources,
   onOpenUpload
 }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
@@ -43,6 +46,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     ? currentCourse.syllabus_timeline.find((w) => w.week === selectedWeek)
     : null;
 
+  const messages = activeSession?.messages || [];
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -51,24 +56,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     scrollToBottom();
   }, [messages, loading]);
 
-  // Initial welcome greeting
-  useEffect(() => {
-    const isGlobal = selectedCourseId === null && selectedWeek === null;
-    const welcomeMsg: ChatMessage = {
-      id: `welcome-${selectedCourseId ?? 'global'}-${selectedWeek ?? 'all'}`,
-      role: 'assistant',
-      content: isGlobal
-        ? `Welcome! I am your Universal Academic Engineering Assistant.\n\nYou don't need to manually select courses or syllabus weeks. Ask any technical computer science or engineering question — our agentic router will autonomously map the topic, week, and verify answers using senior peer notes.`
-        : `Welcome! We are currently focused on **${currentCourse?.course_id || 'Course'} — Week ${selectedWeek}: ${currentWeekInfo?.core_topic || 'Syllabus Topic'}**.\n\nAsk any conceptual theory or lab implementation question. All answers are strictly grounded in verified peer notes.`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    setMessages([welcomeMsg]);
-    setRateLimitError(null);
-  }, [selectedCourseId, selectedWeek]);
-
   const handleSend = async (queryText?: string) => {
     const textToSend = queryText || input;
-    if (!textToSend.trim() || loading) return;
+    if (!textToSend.trim() || loading || !activeSession) return;
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -77,7 +67,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const newMessagesWithUser = [...messages, userMessage];
+    const isFirstQuestion = messages.filter(m => m.role === 'user').length === 0;
+    const sessionTitle = isFirstQuestion 
+      ? (textToSend.trim().length > 38 ? `${textToSend.trim().slice(0, 38)}...` : textToSend.trim())
+      : undefined;
+
+    onUpdateSessionMessages(activeSession.id, newMessagesWithUser, sessionTitle);
     if (!queryText) setInput('');
     setLoading(true);
     setRateLimitError(null);
@@ -100,7 +96,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         language_mode: response.agentic_meta?.language_mode
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      const finalMessages = [...newMessagesWithUser, assistantMessage];
+      onUpdateSessionMessages(activeSession.id, finalMessages);
     } catch (err: any) {
       console.error('Chat error:', err);
       setRateLimitError('Server rate limit or temporary latency hit. Please retry in a few seconds.');

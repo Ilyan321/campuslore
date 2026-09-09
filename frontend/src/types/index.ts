@@ -53,3 +53,13 @@ export interface WeekNoteInfo {
   topic: string;
   created_at: string;
 }
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  course_id: string | null;
+  week_number: number | null;
+  messages: ChatMessage[];
+}
