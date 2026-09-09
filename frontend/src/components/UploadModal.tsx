@@ -4,13 +4,12 @@ import { analyzeFile, confirmIngest } from '../services/api';
 import {
   UploadCloud,
   X,
-  FileCode,
-  FileText,
   Check,
   AlertCircle,
   Loader2,
   ArrowRight,
-  RotateCcw
+  RotateCcw,
+  BookOpen
 } from 'lucide-react';
 
 interface UploadModalProps {
@@ -26,12 +25,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   courses,
   onUploadSuccess
 }) => {
-  const [courseId, setCourseId] = useState<string>('CSE-212');
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>(courses[0]?.course_id || 'CSE-212');
   const [overrideWeek, setOverrideWeek] = useState<number>(1);
   const [overrideTopic, setOverrideTopic] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
@@ -39,7 +38,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const currentCourse = courses.find((c) => c.course_id === courseId) || courses[0];
+  const activeCourse = courses.find((c) => c.course_id === selectedCourseId) || courses[0];
 
   if (!isOpen) return null;
 
@@ -71,13 +70,19 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setError(null);
     setSuccessMessage(null);
     setLoading(true);
-    setStatusMessage('Extracting text, handwriting and code via local parser & OCR...');
+    setStatusMessage('Extracting text, handwriting, and analyzing curriculum alignment...');
 
     try {
-      const result = await analyzeFile(selectedFile, courseId);
+      const result = await analyzeFile(selectedFile, selectedCourseId);
       setAnalysis(result);
+      
+      const detectedCourse = result.classification.course_id || selectedCourseId;
+      setSelectedCourseId(detectedCourse);
       setOverrideWeek(result.classification.assigned_week || 1);
-      setOverrideTopic(result.classification.topic || currentCourse.syllabus_timeline[0]?.core_topic || 'General Topic');
+      
+      const matchedCourse = courses.find(c => c.course_id === detectedCourse) || courses[0];
+      const matchedWeek = matchedCourse?.syllabus_timeline.find(w => w.week === (result.classification.assigned_week || 1));
+      setOverrideTopic(result.classification.topic || matchedWeek?.core_topic || 'General Academic Topic');
     } catch (err: any) {
       setError(err.message || 'Failed to process document.');
     } finally {
@@ -94,18 +99,18 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       const resp = await confirmIngest({
         file_name: analysis.file_name,
         file_url: analysis.file_url,
-        course_id: courseId,
+        course_id: selectedCourseId,
         week_number: Number(overrideWeek),
         topic: overrideTopic,
         content: analysis.extracted_text
       });
 
-      setSuccessMessage(resp.message || 'Notes successfully indexed into vector database.');
+      setSuccessMessage(resp.message || 'Notes successfully indexed into the knowledge base.');
       setTimeout(() => {
         onUploadSuccess();
         handleReset();
         onClose();
-      }, 1500);
+      }, 1400);
     } catch (err: any) {
       setError(err.message || 'Failed to save notes.');
     } finally {
@@ -128,10 +133,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-blueprint-border bg-blueprint-surface">
           <div className="flex items-center gap-2.5">
-            <span className="font-mono text-[11px] text-blueprint-brass font-bold">[INGEST]</span>
+            <div className="w-7 h-7 rounded bg-blueprint-raised border border-blueprint-border flex items-center justify-center text-blueprint-brass flex-shrink-0">
+              <UploadCloud className="w-4 h-4 stroke-[2]" />
+            </div>
             <div>
-              <h3 className="font-semibold text-sm text-blueprint-primary">Contribute Senior Note / Lab Code</h3>
-              <p className="text-[11px] font-mono text-blueprint-muted">Syllabus classification & vector indexing</p>
+              <h3 className="font-semibold text-sm text-blueprint-primary">Upload Study Material</h3>
+              <p className="text-[11px] font-mono text-blueprint-muted">Autonomous OCR, parsing, and syllabus alignment</p>
             </div>
           </div>
           <button
@@ -145,29 +152,6 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         {/* Modal Body */}
         <div className="p-5 overflow-y-auto space-y-4">
           
-          {/* Target Course Selector */}
-          <div>
-            <label className="block text-[11px] font-mono uppercase tracking-wider text-blueprint-muted mb-1">
-              Course Code / Subject Name
-            </label>
-            <input
-              type="text"
-              list="course-suggestions"
-              value={courseId}
-              onChange={(e) => setCourseId(e.target.value)}
-              disabled={loading || analysis !== null}
-              placeholder="e.g. CSE-212, CSE-305, CSE-310 Operating Systems..."
-              className="w-full bg-blueprint-raised text-blueprint-primary text-xs font-mono py-2 px-3 rounded border border-blueprint-border focus:border-blueprint-brass outline-none disabled:opacity-50"
-            />
-            <datalist id="course-suggestions">
-              {courses.map((c) => (
-                <option key={c.course_id} value={c.course_id}>
-                  {c.course_name}
-                </option>
-              ))}
-            </datalist>
-          </div>
-
           {/* Success Banner */}
           {successMessage && (
             <div className="p-3 rounded border border-blueprint-emerald/40 bg-blueprint-surface text-blueprint-emerald text-xs flex items-center gap-2.5 font-mono">
@@ -197,10 +181,10 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`border border-dashed rounded p-8 text-center cursor-pointer transition-colors flex flex-col items-center justify-center gap-2.5 ${
+              className={`border border-dashed rounded p-9 text-center cursor-pointer transition-colors flex flex-col items-center justify-center gap-3 ${
                 isDragging
                   ? 'border-blueprint-brass bg-blueprint-raised'
-                  : 'border-blueprint-border hover:border-blueprint-borderLight bg-blueprint-surface hover:bg-blueprint-raised'
+                  : 'border-blueprint-border hover:border-blueprint-borderLight bg-blueprint-surface hover:bg-blueprint-raised/50'
               }`}
             >
               <input
@@ -210,36 +194,44 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 accept=".pdf,.png,.jpg,.jpeg,.webp,.py,.cpp,.c,.txt,.md"
                 onChange={handleFileChange}
               />
-              <UploadCloud className="w-8 h-8 text-blueprint-brass stroke-[1.8]" />
+              <div className="w-12 h-12 rounded-full bg-blueprint-raised border border-blueprint-border flex items-center justify-center text-blueprint-brass">
+                <UploadCloud className="w-6 h-6 stroke-[1.8]" />
+              </div>
               <div>
-                <p className="font-medium text-xs text-blueprint-primary">
-                  Drag & drop peer handwritten notes, PDF slides, or lab code files
+                <p className="font-medium text-xs lg:text-sm text-blueprint-primary">
+                  Drag & drop lecture notes, PDF slides, or code files
                 </p>
-                <p className="text-[11px] font-mono text-blueprint-muted mt-1">
-                  Format: .pdf, .png, .jpg (handwriting), .py, .cpp, .c, .txt
+                <p className="text-[11px] font-mono text-blueprint-muted mt-1.5">
+                  Supported formats: PDF, PNG, JPG (handwritten notes), PY, CPP, C, TXT
                 </p>
               </div>
+              <button
+                type="button"
+                className="mt-1 px-3 py-1.5 rounded bg-blueprint-raised hover:bg-blueprint-subtle text-blueprint-primary border border-blueprint-border font-mono text-xs transition"
+              >
+                Select File
+              </button>
             </div>
           )}
 
           {/* Loading Animation */}
           {loading && (
-            <div className="py-10 flex flex-col items-center justify-center text-center space-y-3 font-mono">
-              <Loader2 className="w-6 h-6 text-blueprint-brass animate-spin" />
+            <div className="py-12 flex flex-col items-center justify-center text-center space-y-3 font-mono">
+              <Loader2 className="w-7 h-7 text-blueprint-brass animate-spin" />
               <div>
-                <p className="text-xs text-blueprint-primary font-semibold">PARSING DOCUMENT...</p>
-                <p className="text-[11px] text-blueprint-muted mt-0.5">{statusMessage}</p>
+                <p className="text-xs text-blueprint-primary font-semibold">ANALYZING DOCUMENT...</p>
+                <p className="text-[11px] text-blueprint-muted mt-1">{statusMessage}</p>
               </div>
             </div>
           )}
 
-          {/* Classification Review & Override */}
+          {/* Classification Review & Alignment */}
           {analysis && !loading && (
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               <div className="p-3.5 rounded border border-blueprint-border bg-blueprint-surface space-y-3">
                 <div className="flex items-center justify-between text-[11px] font-mono">
                   <span className="text-blueprint-brass font-semibold">
-                    CLASSIFICATION RESULT
+                    SYLLABUS ALIGNMENT
                   </span>
                   <span className="text-blueprint-muted">
                     Confidence: {Math.round(analysis.classification.confidence * 100)}%
@@ -248,54 +240,80 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   
+                  {/* Subject / Course Selector */}
+                  <div>
+                    <label className="text-[11px] font-mono text-blueprint-muted mb-1 block">
+                      Subject / Course
+                    </label>
+                    <select
+                      value={selectedCourseId}
+                      onChange={(e) => {
+                        const newCourseId = e.target.value;
+                        setSelectedCourseId(newCourseId);
+                        const c = courses.find(course => course.course_id === newCourseId);
+                        if (c && c.syllabus_timeline.length > 0) {
+                          setOverrideWeek(c.syllabus_timeline[0].week);
+                          setOverrideTopic(c.syllabus_timeline[0].core_topic);
+                        }
+                      }}
+                      className="w-full bg-blueprint-raised border border-blueprint-border text-blueprint-primary text-xs font-mono py-1.5 px-2.5 rounded focus:border-blueprint-brass outline-none"
+                    >
+                      {courses.map((c) => (
+                        <option key={c.course_id} value={c.course_id}>
+                          {c.course_name} ({c.course_id})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   {/* Assigned Week */}
                   <div>
                     <label className="text-[11px] font-mono text-blueprint-muted mb-1 block">
-                      Target Week (Override)
+                      Target Syllabus Week
                     </label>
                     <select
                       value={overrideWeek}
                       onChange={(e) => {
                         const wk = Number(e.target.value);
                         setOverrideWeek(wk);
-                        const matched = currentCourse.syllabus_timeline.find((t) => t.week === wk);
+                        const matched = activeCourse?.syllabus_timeline.find((t) => t.week === wk);
                         if (matched) setOverrideTopic(matched.core_topic);
                       }}
                       className="w-full bg-blueprint-raised border border-blueprint-border text-blueprint-primary text-xs font-mono py-1.5 px-2.5 rounded focus:border-blueprint-brass outline-none"
                     >
-                      {currentCourse.syllabus_timeline.map((w) => (
+                      {activeCourse?.syllabus_timeline.map((w) => (
                         <option key={w.week} value={w.week}>
-                          W{String(w.week).padStart(2, '0')}: {w.core_topic}
+                          Week {w.week}: {w.core_topic}
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  {/* Topic Title */}
-                  <div>
-                    <label className="text-[11px] font-mono text-blueprint-muted mb-1 block">
-                      Topic Label
-                    </label>
-                    <input
-                      type="text"
-                      value={overrideTopic}
-                      onChange={(e) => setOverrideTopic(e.target.value)}
-                      className="w-full bg-blueprint-raised border border-blueprint-border text-blueprint-primary text-xs py-1.5 px-2.5 rounded focus:border-blueprint-brass outline-none"
-                    />
-                  </div>
+                </div>
 
+                {/* Topic Label */}
+                <div>
+                  <label className="text-[11px] font-mono text-blueprint-muted mb-1 block">
+                    Topic Title
+                  </label>
+                  <input
+                    type="text"
+                    value={overrideTopic}
+                    onChange={(e) => setOverrideTopic(e.target.value)}
+                    className="w-full bg-blueprint-raised border border-blueprint-border text-blueprint-primary text-xs py-1.5 px-2.5 rounded focus:border-blueprint-brass outline-none font-sans"
+                  />
                 </div>
 
                 {/* Reasoning Note */}
                 <p className="text-[11px] font-mono text-blueprint-secondary bg-blueprint-raised p-2 rounded border border-blueprint-border">
-                  Classification note: {analysis.classification.reasoning}
+                  Classification insight: {analysis.classification.reasoning}
                 </p>
               </div>
 
               {/* Extracted Text Preview */}
               <div>
                 <label className="text-[11px] font-mono text-blueprint-muted block mb-1">
-                  Extracted Preview ({analysis.file_name})
+                  Extracted Content Preview ({analysis.file_name})
                 </label>
                 <div className="bg-blueprint-canvas p-3 rounded border border-blueprint-border text-blueprint-secondary text-xs font-mono max-h-32 overflow-y-auto whitespace-pre-wrap">
                   {analysis.extracted_text}
@@ -317,7 +335,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 className="flex items-center gap-1 text-xs font-mono text-blueprint-secondary hover:text-blueprint-primary px-2.5 py-1.5 rounded transition"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                Reset
+                Upload Another File
               </button>
               <button
                 onClick={handleConfirm}
@@ -331,7 +349,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <span>Confirm & Ingest</span>
+                    <span>Confirm & Index</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
@@ -353,4 +371,5 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     </div>
   );
 };
+
 

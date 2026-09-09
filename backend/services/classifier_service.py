@@ -91,7 +91,7 @@ def classify_syllabus_week(text: str, course_id: Optional[str] = None) -> Dict[s
         text_sample = text[:3000]
         
         system_prompt = (
-            "You are an academic curriculum classifier for QUEST Nawabshah / MUET engineering courses. "
+            "You are an academic curriculum classifier for university engineering courses. "
             "Given a sample of student notes or lab code, determine which syllabus week and topic it maps to. "
             "Respond ONLY with valid JSON in this exact structure:\n"
             "{\n"

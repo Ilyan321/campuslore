@@ -140,14 +140,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </p>
           </div>
         </div>
-
-        <button
-          onClick={onOpenUpload}
-          className="text-[11px] font-mono text-blueprint-secondary hover:text-blueprint-primary flex items-center gap-1 px-2 py-1 rounded border border-blueprint-border hover:bg-blueprint-raised transition"
-        >
-          <BookOpen className="w-3.5 h-3.5 text-blueprint-brass" />
-          <span>Contribute Notes</span>
-        </button>
       </div>
 
       {/* Messages Feed */}
