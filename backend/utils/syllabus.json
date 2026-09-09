@@ -1,0 +1,76 @@
+[
+  {
+    "course_id": "CSE-212",
+    "course_name": "Data Structures & Algorithms",
+    "department": "Computer Systems Engineering",
+    "syllabus_timeline": [
+      {
+        "week": 1,
+        "core_topic": "Pointers, Dynamic Memory Allocation and Arrays",
+        "grounding_keywords": ["malloc", "calloc", "pointers", "memory leak", "dynamic array", "reference", "sizeof"]
+      },
+      {
+        "week": 3,
+        "core_topic": "Singly and Doubly Linked Lists",
+        "grounding_keywords": ["node", "next pointer", "prev pointer", "head", "tail", "linked list", "insert at head", "delete node"]
+      },
+      {
+        "week": 4,
+        "core_topic": "Stack Data Structure & Expression Parsing",
+        "grounding_keywords": ["stack", "push", "pop", "peek", "lifo", "infix to postfix", "parentheses matching", "call stack"]
+      },
+      {
+        "week": 5,
+        "core_topic": "Queue Data Structure & Circular Implementations",
+        "grounding_keywords": ["queue", "enqueue", "dequeue", "front", "rear", "circular queue", "fifo", "buffer overflow", "modulo arithmetic"]
+      },
+      {
+        "week": 8,
+        "core_topic": "Binary Search Trees & Tree Traversals",
+        "grounding_keywords": ["bst", "binary search tree", "inorder", "preorder", "postorder", "leaf node", "height", "root", "avl balance"]
+      },
+      {
+        "week": 12,
+        "core_topic": "Graph Traversals and Shortest Path Optimization",
+        "grounding_keywords": ["graph", "bfs", "dfs", "dijkstra", "adjacency matrix", "adjacency list", "shortest path", "visited array", "cost matrix", "weighted graph"]
+      },
+      {
+        "week": 14,
+        "core_topic": "Sorting and Searching Algorithms & Time Complexity",
+        "grounding_keywords": ["quicksort", "mergesort", "binary search", "big o notation", "pivot", "divide and conquer", "time complexity"]
+      }
+    ]
+  },
+  {
+    "course_id": "CSE-305",
+    "course_name": "Data & Computer Networks",
+    "department": "Computer Systems Engineering",
+    "syllabus_timeline": [
+      {
+        "week": 2,
+        "core_topic": "OSI 7-Layer Architecture & TCP/IP Model",
+        "grounding_keywords": ["osi model", "physical layer", "data link", "network layer", "transport layer", "session", "presentation", "application layer", "encapsulation", "pdu"]
+      },
+      {
+        "week": 5,
+        "core_topic": "IP Addressing, CIDR & Subnetting Calculations",
+        "grounding_keywords": ["ipv4", "subnet mask", "cidr", "slash notation", "network id", "broadcast address", "usable hosts", "vlsm", "subnetting"]
+      },
+      {
+        "week": 9,
+        "core_topic": "Routing Protocols: Distance Vector vs Link State (OSPF & RIP)",
+        "grounding_keywords": ["routing", "router", "distance vector", "link state", "rip", "ospf", "hop count", "dijkstra algorithm", "routing table", "convergence"]
+      },
+      {
+        "week": 11,
+        "core_topic": "Transport Layer Protocols: TCP vs UDP & Handshake",
+        "grounding_keywords": ["tcp", "udp", "three way handshake", "syn ack", "flow control", "sliding window", "congestion control", "port numbers", "reliable transfer"]
+      },
+      {
+        "week": 14,
+        "core_topic": "Application Layer Protocols (HTTP, DNS, DHCP) & Network Security",
+        "grounding_keywords": ["http", "https", "dns resolution", "dhcp dora", "socket", "tls ssl", "firewall", "nat"]
+      }
+    ]
+  }
+]
