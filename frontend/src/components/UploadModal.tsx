@@ -84,7 +84,10 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       const matchedWeek = matchedCourse?.syllabus_timeline.find(w => w.week === (result.classification.assigned_week || 1));
       setOverrideTopic(result.classification.topic || matchedWeek?.core_topic || 'General Academic Topic');
     } catch (err: any) {
-      setError(err.message || 'Failed to process document.');
+      const errMsg = err?.message === 'Failed to fetch' 
+        ? 'Could not connect to backend server. The server might be waking up; please retry in a moment.' 
+        : (err?.message || 'Failed to process document.');
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
