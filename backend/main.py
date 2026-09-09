@@ -11,6 +11,7 @@ from services.classifier_service import classify_syllabus_week, load_syllabus
 from services.embedder_service import get_embeddings_batch
 from services.supabase_service import upload_file_to_storage, insert_note_chunks, get_supabase_client
 from services.rag_service import execute_rag_pipeline, stream_rag_pipeline
+from services.agentic_rag_service import run_agentic_rag
 from utils.chunker import semantic_chunk
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -149,20 +150,18 @@ def confirm_ingestion(payload: ConfirmIngestRequest):
 @app.post("/api/query")
 def query_rag(payload: QueryRequest):
     """
-    Workflow B: Junior asks a question sandboxed to the active syllabus week.
-    Returns Roman Urdu + English grounded answer with source attribution.
+    Bilingual Agentic RAG: Decomposes query, executes multi-hop vector retrieval,
+    grades relevance, and synthesizes bilingual (English / Roman Urdu) grounded answer.
     """
     try:
-        result = execute_rag_pipeline(
+        result = run_agentic_rag(
             query=payload.query,
             week_number=payload.week_number,
-            course_id=payload.course_id,
-            match_threshold=payload.match_threshold or 0.25,
-            match_count=payload.match_count or 4
+            course_id=payload.course_id or "CSE-212"
         )
         return result
     except Exception as e:
-        logger.error(f"Error executing RAG query: {e}")
+        logger.error(f"Error executing Agentic RAG query: {e}")
         raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
 
 @app.post("/api/query/stream")
