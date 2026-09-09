@@ -11,10 +11,14 @@ from services.classifier_service import load_syllabus, heuristic_classify
 logger = logging.getLogger("campuslore.agentic_rag")
 
 def clean_llm_text(text: str) -> str:
-    """Strips <think> tags or internal reasoning prefixes."""
+    """Strips <think> tags, unclosed think blocks, or internal reasoning prefixes."""
     if not text:
         return ""
+    # Strip closed <think>...</think> blocks
     cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+    # Strip unclosed <think> block if token limit cutoff occurred
+    if '<think>' in cleaned:
+        cleaned = re.sub(r'<think>.*', '', cleaned, flags=re.DOTALL)
     return cleaned.strip()
 
 # 1. BILINGUAL INTENT & AUTONOMOUS SYLLABUS ROUTER
@@ -221,7 +225,8 @@ def build_bilingual_synthesis_prompt(
         "- If the student writes in English -> Respond in structured, technical English with clean markdown and code blocks.\n"
         "- If the student writes in Roman Urdu or Urdu-English mix -> Respond in warm, natural Roman Urdu combined with standard technical terms.\n"
         "- Grounding: Explicitly cite note names (e.g. 'From peer notes in circular_queue_lab.cpp...').\n"
-        "- Code: Provide working, commented code snippets highlighting common student bugs."
+        "- Code: Provide working, commented code snippets highlighting common student bugs.\n"
+        "- Format: Output clean markdown directly. Do NOT output <think> tags or internal chains of thought."
     )
 
     user_prompt = (

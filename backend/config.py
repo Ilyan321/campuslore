@@ -19,6 +19,6 @@ HF_HOME: str = os.getenv("HF_HOME", default_hf_cache)
 os.environ["HF_HOME"] = HF_HOME
 
 EMBEDDING_MODEL_NAME = "BAAI/bge-small-en-v1.5"
-GROQ_CLASSIFIER_MODEL = "qwen/qwen3.6-27b"
-GROQ_CHAT_MODEL = "qwen/qwen3.6-27b"
+GROQ_CLASSIFIER_MODEL = "openai/gpt-oss-120b"
+GROQ_CHAT_MODEL = "openai/gpt-oss-120b"
 GEMINI_OCR_MODEL = "gemini-2.5-flash"
