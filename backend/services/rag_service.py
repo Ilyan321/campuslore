@@ -1,3 +1,4 @@
+import re
 import time
 import logging
 from typing import Dict, Any, List, Optional, AsyncGenerator
@@ -14,13 +15,20 @@ CACHE_TTL_SECONDS = 3600
 def get_cache_key(query: str, week_number: int, course_id: Optional[str]) -> str:
     return f"{course_id or 'any'}_w{week_number}_{query.strip().lower()}"
 
+def clean_llm_response(text: str) -> str:
+    """Strips <think> tags or internal reasoning prefixes from output."""
+    if not text:
+        return ""
+    cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+    return cleaned.strip()
+
 def build_system_prompt() -> str:
     return (
         "You are 'Senior AI', a brilliant, friendly, and empathetic engineering senior at QUEST Nawabshah / MUET Jamshoro. "
         "Your mission is to help junior students ace their lab exams, assignments, and theory concepts by explaining things "
         "using their seniors' uploaded peer notes.\n\n"
         "Guidelines:\n"
-        "1. Grounding: Answer STRICTLY based on the provided peer notes context. If the information isn't present, explain what is known from the notes and politely state what's missing.\n"
+        "1. Grounding: Answer based on the provided peer notes context. If the information isn't present, explain what is known from the notes and politely state what's missing.\n"
         "2. Language & Tone: Use a natural blend of Roman Urdu and technical English (code-switching like: 'Dekho bhai/behan...', 'Basically pointer rear reset tab hota hai jab...', 'Lab practical point of view se...'). Keep it warm, motivating, and crystal clear.\n"
         "3. Code & Technical Depth: When explaining code or algorithms, provide clean, well-commented code snippets with edge cases highlighted.\n"
         "4. Transparency: Reference which peer note or section the concept is drawn from.\n"
@@ -93,9 +101,10 @@ def execute_rag_pipeline(
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.3,
-                max_tokens=1024
+                max_tokens=650
             )
-            answer = response.choices[0].message.content
+            raw_answer = response.choices[0].message.content or ""
+            answer = clean_llm_response(raw_answer)
         except Exception as e:
             logger.error(f"Groq Chat inference error: {e}")
             answer = f"Hamara AI abhi thoda busy hai ya rate limit hit hui hai. Please try again in 5 seconds! (Error: {str(e)})"
@@ -157,7 +166,7 @@ async def stream_rag_pipeline(
             {"role": "user", "content": user_prompt}
         ],
         temperature=0.3,
-        max_tokens=1024,
+        max_tokens=650,
         stream=True
     )
     for chunk in stream:
