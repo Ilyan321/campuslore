@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react';
 export function App() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>('CSE-212');
-  const [selectedWeek, setSelectedWeek] = useState<number>(5);
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
   const [sources, setSources] = useState<NoteSource[]>([]);
   const [activeSourceIndex, setActiveSourceIndex] = useState<number>(0);
@@ -25,8 +25,6 @@ export function App() {
         setCourses(syllabusList);
         if (syllabusList.length > 0) {
           setSelectedCourseId(syllabusList[0].course_id);
-          const firstWeek = syllabusList[0].syllabus_timeline[0]?.week || 1;
-          setSelectedWeek(firstWeek);
         }
       } catch (err) {
         console.error('Failed to load syllabus outline:', err);
@@ -41,10 +39,7 @@ export function App() {
 
   const handleSelectCourse = (id: string) => {
     setSelectedCourseId(id);
-    const matched = courses.find((c) => c.course_id === id);
-    if (matched && matched.syllabus_timeline.length > 0) {
-      setSelectedWeek(matched.syllabus_timeline[0].week);
-    }
+    setSelectedWeek(null); // Return to auto-detect when switching courses
   };
 
   const handleOpenSources = (newSources: NoteSource[]) => {
@@ -87,6 +82,7 @@ export function App() {
         <ChatInterface
           course={currentCourse}
           selectedWeek={selectedWeek}
+          onSelectWeek={(wk) => setSelectedWeek(wk)}
           onOpenSources={handleOpenSources}
           onOpenUpload={() => setIsUploadOpen(true)}
         />

@@ -81,13 +81,21 @@ export async function confirmIngest(payload: {
 
 export async function queryRAG(payload: {
   query: string;
-  week_number: number;
+  week_number?: number | null;
   course_id: string;
 }): Promise<{
   answer: string;
   week_number: number;
   course_id: string;
   sources: NoteSource[];
+  agentic_meta?: {
+    auto_detected_week?: number;
+    detected_topic?: string;
+    language_mode?: string;
+    expanded_queries?: string[];
+    relevance_grade?: string;
+    latency_seconds?: number;
+  };
 }> {
   const res = await fetch(`${API_BASE_URL}/api/query`, {
     method: 'POST',
@@ -100,6 +108,14 @@ export async function queryRAG(payload: {
     throw new Error(err.detail || 'Query failed');
   }
 
+  return await res.json();
+}
+
+export async function triggerSeed(): Promise<{ success: boolean; message: string; seeded_topics: string[]; total_chunks: number }> {
+  const res = await fetch(`${API_BASE_URL}/api/seed`, {
+    method: 'POST'
+  });
+  if (!res.ok) throw new Error('Failed to seed notes database');
   return await res.json();
 }
 

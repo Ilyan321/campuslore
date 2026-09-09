@@ -10,8 +10,8 @@ from services.ocr_service import extract_text_from_document
 from services.classifier_service import classify_syllabus_week, load_syllabus
 from services.embedder_service import get_embeddings_batch
 from services.supabase_service import upload_file_to_storage, insert_note_chunks, get_supabase_client
-from services.rag_service import execute_rag_pipeline, stream_rag_pipeline
-from services.agentic_rag_service import run_agentic_rag
+from services.rag_service import execute_rag_pipeline
+from services.agentic_rag_service import run_agentic_rag, stream_agentic_rag
 from utils.chunker import semantic_chunk
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -42,7 +42,7 @@ class ConfirmIngestRequest(BaseModel):
 
 class QueryRequest(BaseModel):
     query: str
-    week_number: int
+    week_number: Optional[int] = None
     course_id: Optional[str] = "CSE-212"
     match_threshold: Optional[float] = 0.25
     match_count: Optional[int] = 4
@@ -167,12 +167,21 @@ def query_rag(payload: QueryRequest):
 @app.post("/api/query/stream")
 async def query_rag_stream(payload: QueryRequest):
     """
-    Streaming query endpoint for real-time token rendering.
+    Streaming query endpoint with Server-Sent Events (SSE) for real-time bilingual token rendering.
     """
     return StreamingResponse(
-        stream_rag_pipeline(payload.query, payload.week_number, payload.course_id),
+        stream_agentic_rag(payload.query, payload.week_number, payload.course_id),
         media_type="text/event-stream"
     )
+
+@app.get("/api/seed")
+@app.post("/api/seed")
+def seed_notes():
+    """
+    Seeds Supabase with high-yield university peer notes for live demos.
+    """
+    from services.seed_service import seed_database
+    return seed_database()
 
 @app.get("/api/notes")
 def get_notes_for_week(

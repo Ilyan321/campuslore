@@ -42,6 +42,9 @@ export interface ChatMessage {
   timestamp: string;
   sources?: NoteSource[];
   isStreaming?: boolean;
+  auto_detected_week?: number;
+  detected_topic?: string;
+  language_mode?: string;
 }
 
 export interface WeekNoteInfo {

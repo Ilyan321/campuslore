@@ -17,7 +17,8 @@ import {
 
 interface ChatInterfaceProps {
   course: Course;
-  selectedWeek: number;
+  selectedWeek: number | null;
+  onSelectWeek?: (week: number) => void;
   onOpenSources: (sources: NoteSource[]) => void;
   onOpenUpload: () => void;
 }
@@ -25,6 +26,7 @@ interface ChatInterfaceProps {
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   course,
   selectedWeek,
+  onSelectWeek,
   onOpenSources,
   onOpenUpload
 }) => {
@@ -35,7 +37,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const currentWeekInfo = course.syllabus_timeline.find((w) => w.week === selectedWeek);
+  const currentWeekInfo = selectedWeek !== null 
+    ? course.syllabus_timeline.find((w) => w.week === selectedWeek)
+    : null;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -45,12 +49,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     scrollToBottom();
   }, [messages, loading]);
 
-  // Reset or initialize welcoming greeting when changing week
+  // Reset or initialize welcoming greeting when changing week or going to global
   useEffect(() => {
+    const isGlobal = selectedWeek === null;
     const welcomeMsg: ChatMessage = {
-      id: `welcome-${selectedWeek}`,
+      id: `welcome-${selectedWeek ?? 'global'}`,
       role: 'assistant',
-      content: `Salam! Main aapka Senior AI assistant hoon. Abhi hum **${course.course_id} — Week ${selectedWeek}: ${currentWeekInfo?.core_topic || 'Syllabus Topic'}** ke context mein hain.\n\nAap Roman Urdu ya English mein jo bhi lab code ya theory ka sawal pochna chahein, pooch sakte hain. Hamare answers strictly seniors ke notes par based hain! 🎓`,
+      content: isGlobal
+        ? `Salam! Main aapka Senior AI assistant hoon 🎓.\n\nAapko yaad rakhne ki zaroorat nahi ke kaunsa topic kis week mein hai. **Roman Urdu ya English** mein koi bhi engineering topic poochhein — hamara Agentic Router khud syllabus week map karke accurate peer notes se answer karega!`
+        : `Salam! Main aapka Senior AI assistant hoon. Abhi hum **${course.course_id} — Week ${selectedWeek}: ${currentWeekInfo?.core_topic || 'Syllabus Topic'}** ke context mein hain.\n\nAap Roman Urdu ya English mein jo bhi lab code ya theory ka sawal poochna chahein, pooch sakte hain. Hamare answers strictly seniors ke notes par based hain! 🎓`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     setMessages([welcomeMsg]);
@@ -85,7 +92,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         role: 'assistant',
         content: response.answer,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        sources: response.sources
+        sources: response.sources,
+        auto_detected_week: response.agentic_meta?.auto_detected_week || response.week_number,
+        detected_topic: response.agentic_meta?.detected_topic,
+        language_mode: response.agentic_meta?.language_mode
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -103,11 +113,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Sample quick questions customized per week
-  const samplePrompts = [
+  // Sample quick questions customized per week or global
+  const samplePrompts = selectedWeek !== null ? [
     `Yaar ${currentWeekInfo?.core_topic || 'is topic'} ka main exam concept Roman Urdu mein samjha do`,
     `Bhai lab test ke liye iska working code snippet aur edge cases bata do`,
     `Is topic mein seniors ne past papers ke kon se important questions highlight kiye hain?`
+  ] : [
+    `Queue underflow aur circular modulo logic kya hota hai?`,
+    `Dijkstra shortest path algorithm ka exam concept Roman Urdu mein samjha do`,
+    `CIDR /26 subnetting mein usable host IPs kaise calculate karte hain?`
   ];
 
   return (
@@ -116,15 +130,22 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Context Bar */}
       <div className="px-6 py-3 border-b border-campus-border/60 bg-campus-card/60 flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2.5">
-          <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-bold">
-            Week {selectedWeek}
-          </span>
+          {selectedWeek !== null ? (
+            <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-bold">
+              Week {selectedWeek}
+            </span>
+          ) : (
+            <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-bold flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-slate-950" />
+              Auto-Detect
+            </span>
+          )}
           <div>
             <h2 className="text-xs font-bold text-white flex items-center gap-1.5">
-              {currentWeekInfo?.core_topic || 'Syllabus Topic'}
+              {selectedWeek !== null ? (currentWeekInfo?.core_topic || 'Syllabus Topic') : 'Universal Semester Knowledge Base'}
             </h2>
             <p className="text-[10px] text-slate-400">
-              Sandboxed knowledge base • {course.course_name}
+              {selectedWeek !== null ? `Sandboxed knowledge base • ${course.course_name}` : `Agentic Week Discovery • Multi-hop retrieval • ${course.course_name}`}
             </p>
           </div>
         </div>
@@ -134,7 +155,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition"
         >
           <BookOpen className="w-3.5 h-3.5" />
-          <span>Contribute Note to Week {selectedWeek}</span>
+          <span>Contribute Notes</span>
         </button>
       </div>
 
@@ -168,6 +189,22 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       : 'bg-campus-card/90 border-campus-border/70 text-slate-200 rounded-tl-none shadow-sm'
                   }`}
                 >
+                  {/* Auto-routed Week Badge for Assistant messages in global mode or auto-detected */}
+                  {!isUser && msg.auto_detected_week && (
+                    <div className="mb-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-400/10 border border-amber-400/30 text-amber-300 text-[11px] font-semibold">
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      <span>📍 Auto-routed to <strong>Week {msg.auto_detected_week}</strong>{msg.detected_topic ? `: ${msg.detected_topic}` : ''}</span>
+                      {onSelectWeek && selectedWeek !== msg.auto_detected_week && (
+                        <button
+                          onClick={() => onSelectWeek(msg.auto_detected_week!)}
+                          className="ml-1 underline text-[10px] text-amber-400 hover:text-amber-200 font-bold"
+                        >
+                          (View Week)
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   <div className="whitespace-pre-wrap">{msg.content}</div>
 
                   {/* Sources button if assistant cited sources */}
@@ -232,7 +269,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce" />
               </div>
               <span className="text-slate-400 font-medium text-xs">
-                Scanning peer notes in pgvector & querying Groq Llama-3.3-70b...
+                Routing topic across syllabus & querying Groq Qwen-27B...
               </span>
             </div>
           </div>
@@ -289,7 +326,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={`Ask about Week ${selectedWeek} in Roman Urdu or English (e.g. "Yaar pointer reset logic samjha do")...`}
+            placeholder={
+              selectedWeek !== null
+                ? `Ask about Week ${selectedWeek} in Roman Urdu or English (e.g. "Yaar pointer reset logic samjha do")...`
+                : `Ask any engineering question in Roman Urdu or English (AI will auto-route to syllabus week)...`
+            }
             className="flex-1 bg-transparent px-3 py-2 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
             disabled={loading}
           />

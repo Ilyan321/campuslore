@@ -1,11 +1,11 @@
 import React from 'react';
 import { Course, SyllabusWeek } from '../types';
-import { Calendar, CheckCircle2, ChevronRight, FileText, Layers } from 'lucide-react';
+import { Calendar, CheckCircle2, ChevronRight, FileText, Layers, Sparkles, Compass } from 'lucide-react';
 
 interface TimelineSidebarProps {
   course: Course;
-  selectedWeek: number;
-  onSelectWeek: (week: number) => void;
+  selectedWeek: number | null;
+  onSelectWeek: (week: number | null) => void;
   noteCounts?: Record<number, number>;
 }
 
@@ -21,7 +21,7 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
     <aside className="w-full lg:w-80 flex-shrink-0 flex flex-col glass-panel rounded-2xl p-4 h-[calc(100vh-6.5rem)] overflow-hidden border border-campus-border/60">
       
       {/* Sidebar Header */}
-      <div className="pb-3.5 mb-3 border-b border-campus-border/50">
+      <div className="pb-3 mb-2 border-b border-campus-border/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-200">
             <Layers className="w-4 h-4 text-amber-400" />
@@ -32,8 +32,38 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
           </span>
         </div>
         <p className="text-[11px] text-slate-400 mt-1">
-          Select a week to sandbox your AI query strictly to peer notes.
+          Select a week or use Universal AI routing across the whole semester.
         </p>
+      </div>
+
+      {/* Global / Auto-Detect Option */}
+      <div className="mb-3">
+        <button
+          onClick={() => onSelectWeek(null)}
+          className={`w-full text-left p-2.5 rounded-xl transition-all duration-150 border flex items-center justify-between ${
+            selectedWeek === null
+              ? 'bg-amber-400/15 border-amber-400 text-amber-300 shadow-md shadow-amber-500/10'
+              : 'bg-campus-card/60 hover:bg-campus-card border-campus-border/40 text-slate-300 hover:border-campus-border/80'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <div className={`p-1.5 rounded-lg ${selectedWeek === null ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-amber-400'}`}>
+              <Compass className="w-4 h-4 stroke-[2.5]" />
+            </div>
+            <div>
+              <div className="text-xs font-bold flex items-center gap-1">
+                <span>All Weeks / Auto-Detect</span>
+                <Sparkles className="w-3 h-3 text-amber-400" />
+              </div>
+              <p className="text-[10px] text-slate-400">Agentic week discovery</p>
+            </div>
+          </div>
+          {selectedWeek === null && (
+            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-400 text-slate-950">
+              ACTIVE
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Week Timeline List */}
