@@ -68,11 +68,6 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
               <p className="text-[10px] font-mono text-blueprint-muted">Universal cross-course routing</p>
             </div>
           </div>
-          {selectedCourseId === null && selectedWeek === null && (
-            <span className="font-mono text-[10px] text-blueprint-brass">
-              [ACTIVE]
-            </span>
-          )}
         </button>
       </div>
 

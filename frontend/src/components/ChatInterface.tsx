@@ -58,8 +58,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       id: `welcome-${selectedCourseId ?? 'global'}-${selectedWeek ?? 'all'}`,
       role: 'assistant',
       content: isGlobal
-        ? `Salam! Main aapka Universal Academic Assistant hoon.\n\nAapko course ya syllabus week select karne ki zaroorat nahi hai. Roman Urdu ya English mein koi bhi computer science ya engineering question poochhein — hamara agentic router khud subject aur week map karke verified senior notes se answer dega.`
-        : `Salam! Abhi hum **${currentCourse?.course_id || 'Course'} — Week ${selectedWeek}: ${currentWeekInfo?.core_topic || 'Syllabus Topic'}** ke focus context mein hain.\n\nAap Roman Urdu ya English mein jo bhi lab code ya theory ka sawal poochhein, answers verified peer notes par based hain.`,
+        ? `Welcome! I am your Universal Academic Engineering Assistant.\n\nYou don't need to manually select courses or syllabus weeks. Ask any technical computer science or engineering question — our agentic router will autonomously map the topic, week, and verify answers using senior peer notes.`
+        : `Welcome! We are currently focused on **${currentCourse?.course_id || 'Course'} — Week ${selectedWeek}: ${currentWeekInfo?.core_topic || 'Syllabus Topic'}**.\n\nAsk any conceptual theory or lab implementation question. All answers are strictly grounded in verified peer notes.`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     setMessages([welcomeMsg]);
@@ -116,13 +116,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const samplePrompts = selectedWeek !== null ? [
-    `Is topic ka main exam concept Roman Urdu mein samjha do`,
-    `Lab test ke liye working code snippet aur edge cases bata do`,
-    `Past papers ke kon se important questions is topic se aate hain?`
+    `Explain the core exam concept and implementation details for this topic`,
+    `Provide a working code snippet with edge cases and time complexity`,
+    `What are the most frequent past paper questions highlighted by seniors?`
   ] : [
-    `Queue underflow aur circular modulo logic kya hota hai?`,
-    `Dijkstra shortest path algorithm ka exam concept Roman Urdu mein samjha do`,
-    `CIDR /26 subnetting mein usable host IPs kaise calculate karte hain?`
+    `How do queue underflow and circular modulo arithmetic work in C++?`,
+    `Explain Dijkstra's shortest path algorithm with a trace example`,
+    `How do you calculate usable host IPs and subnets in CIDR /26?`
   ];
 
   return (
@@ -322,7 +322,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask in Roman Urdu or English (e.g. Queue underflow check logic samjha do)..."
+              placeholder="Ask any computer science or engineering question (e.g. Explain circular queue modulo arithmetic)..."
               disabled={loading}
               className="w-full bg-blueprint-raised text-blueprint-primary text-xs lg:text-sm py-2.5 px-3 rounded border border-blueprint-border focus:border-blueprint-brass focus:outline-none placeholder:text-blueprint-muted/60 transition disabled:opacity-50"
             />
