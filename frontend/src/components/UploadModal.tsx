@@ -6,12 +6,11 @@ import {
   X,
   FileCode,
   FileText,
-  Sparkles,
-  CheckCircle2,
+  Check,
   AlertCircle,
   Loader2,
   ArrowRight,
-  RefreshCw
+  RotateCcw
 } from 'lucide-react';
 
 interface UploadModalProps {
@@ -74,10 +73,9 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setError(null);
     setSuccessMessage(null);
     setLoading(true);
-    setStatusMessage('Multimodal OCR extracting handwriting, diagrams & text...');
+    setStatusMessage('Extracting text, handwriting and code via local parser & OCR...');
 
     try {
-      // Step 1: Analyze with Gemini OCR + Groq Classifier
       const result = await analyzeFile(selectedFile, courseId);
       setAnalysis(result);
       setOverrideWeek(result.classification.assigned_week || 1);
@@ -104,12 +102,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         content: analysis.extracted_text
       });
 
-      setSuccessMessage(resp.message || 'Notes successfully indexed in Supabase pgvector!');
+      setSuccessMessage(resp.message || 'Notes successfully indexed into vector database.');
       setTimeout(() => {
         onUploadSuccess();
         handleReset();
         onClose();
-      }, 1800);
+      }, 1500);
     } catch (err: any) {
       setError(err.message || 'Failed to save notes.');
     } finally {
@@ -126,45 +124,43 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="glass-panel w-full max-w-2xl rounded-2xl border border-campus-border/80 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-150">
+      <div className="blueprint-panel w-full max-w-2xl rounded shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-campus-border/60 bg-campus-card/50">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-blueprint-border bg-blueprint-surface">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-              <UploadCloud className="w-4 h-4" />
-            </div>
+            <span className="font-mono text-[11px] text-blueprint-brass font-bold">[INGEST]</span>
             <div>
-              <h3 className="font-bold text-base text-white">Upload Senior Note / Lab Code</h3>
-              <p className="text-xs text-slate-400">Automatic Multimodal OCR & Syllabus Week Mapping</p>
+              <h3 className="font-semibold text-sm text-blueprint-primary">Contribute Senior Note / Lab Code</h3>
+              <p className="text-[11px] font-mono text-blueprint-muted">Syllabus classification & vector indexing</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition"
+            className="text-blueprint-muted hover:text-blueprint-primary p-1 rounded hover:bg-blueprint-raised transition"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-5">
+        <div className="p-5 overflow-y-auto space-y-4">
           
           {/* Target Course Selector */}
           <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
-              Target Course Outline
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-blueprint-muted mb-1">
+              Target Course Syllabus
             </label>
             <select
               value={courseId}
               onChange={(e) => setCourseId(e.target.value)}
               disabled={loading || analysis !== null}
-              className="w-full bg-campus-card text-slate-200 text-xs font-semibold py-2.5 px-3.5 rounded-xl border border-campus-border/80 focus:ring-2 focus:ring-amber-500/40 outline-none disabled:opacity-60"
+              className="w-full bg-blueprint-raised text-blueprint-primary text-xs font-mono py-2 px-3 rounded border border-blueprint-border focus:border-blueprint-brass outline-none disabled:opacity-50"
             >
               {courses.map((c) => (
                 <option key={c.course_id} value={c.course_id}>
-                  {c.course_id} — {c.course_name}
+                  {c.course_id} • {c.course_name}
                 </option>
               ))}
             </select>
@@ -172,22 +168,22 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
           {/* Success Banner */}
           {successMessage && (
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-400" />
+            <div className="p-3 rounded border border-blueprint-emerald/40 bg-blueprint-surface text-blueprint-emerald text-xs flex items-center gap-2.5 font-mono">
+              <Check className="w-4 h-4 stroke-[2.5]" />
               <div>
-                <p className="font-bold">Indexed Successfully!</p>
-                <p className="text-slate-300 text-[11px]">{successMessage}</p>
+                <p className="font-bold">INDEXED SUCCESSFULLY</p>
+                <p className="text-blueprint-primary text-[11px]">{successMessage}</p>
               </div>
             </div>
           )}
 
           {/* Error Banner */}
           {error && (
-            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-400" />
+            <div className="p-3 rounded border border-blueprint-ruby/40 bg-blueprint-surface text-blueprint-ruby text-xs flex items-center gap-2.5 font-mono">
+              <AlertCircle className="w-4 h-4 stroke-[2]" />
               <div>
-                <p className="font-bold">Action Failed</p>
-                <p className="text-slate-300 text-[11px]">{error}</p>
+                <p className="font-bold">PROCESSING ERROR</p>
+                <p className="text-blueprint-primary text-[11px]">{error}</p>
               </div>
             </div>
           )}
@@ -199,10 +195,10 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 ${
+              className={`border border-dashed rounded p-8 text-center cursor-pointer transition-colors flex flex-col items-center justify-center gap-2.5 ${
                 isDragging
-                  ? 'border-amber-400 bg-amber-500/10 scale-[0.99]'
-                  : 'border-campus-border/80 hover:border-amber-500/50 bg-campus-card/30 hover:bg-campus-card/50'
+                  ? 'border-blueprint-brass bg-blueprint-raised'
+                  : 'border-blueprint-border hover:border-blueprint-borderLight bg-blueprint-surface hover:bg-blueprint-raised'
               }`}
             >
               <input
@@ -212,15 +208,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 accept=".pdf,.png,.jpg,.jpeg,.webp,.py,.cpp,.c,.txt,.md"
                 onChange={handleFileChange}
               />
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-inner">
-                <UploadCloud className="w-7 h-7 stroke-[2]" />
-              </div>
+              <UploadCloud className="w-8 h-8 text-blueprint-brass stroke-[1.8]" />
               <div>
-                <p className="font-bold text-sm text-slate-200">
-                  Drag & Drop senior handwritten notes, PDFs, or lab scripts
+                <p className="font-medium text-xs text-blueprint-primary">
+                  Drag & drop peer handwritten notes, PDF slides, or lab code files
                 </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Supports <span className="text-amber-300">.pdf</span>, <span className="text-amber-300">.png, .jpg</span> (handwriting OCR), <span className="text-amber-300">.py, .cpp</span>
+                <p className="text-[11px] font-mono text-blueprint-muted mt-1">
+                  Format: .pdf, .png, .jpg (handwriting), .py, .cpp, .c, .txt
                 </p>
               </div>
             </div>
@@ -228,38 +222,34 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
           {/* Loading Animation */}
           {loading && (
-            <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
-              <div className="relative">
-                <div className="w-14 h-14 rounded-full border-4 border-amber-500/20 border-t-amber-400 animate-spin" />
-                <Sparkles className="w-6 h-6 text-amber-400 absolute inset-0 m-auto animate-pulse" />
-              </div>
+            <div className="py-10 flex flex-col items-center justify-center text-center space-y-3 font-mono">
+              <Loader2 className="w-6 h-6 text-blueprint-brass animate-spin" />
               <div>
-                <p className="font-bold text-sm text-slate-200">Processing Senior Note...</p>
-                <p className="text-xs text-slate-400 mt-1">{statusMessage}</p>
+                <p className="text-xs text-blueprint-primary font-semibold">PARSING DOCUMENT...</p>
+                <p className="text-[11px] text-blueprint-muted mt-0.5">{statusMessage}</p>
               </div>
             </div>
           )}
 
-          {/* AI Confirmation Card (Workflow A Step 5) */}
+          {/* Classification Review & Override */}
           {analysis && !loading && (
-            <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-campus-card border border-amber-500/30 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400 uppercase tracking-wider">
-                    <Sparkles className="w-4 h-4" />
-                    AI Syllabus Classification
+            <div className="space-y-3">
+              <div className="p-3.5 rounded border border-blueprint-border bg-blueprint-surface space-y-3">
+                <div className="flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-blueprint-brass font-semibold">
+                    CLASSIFICATION RESULT
                   </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                  <span className="text-blueprint-muted">
                     Confidence: {Math.round(analysis.classification.confidence * 100)}%
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   
-                  {/* Assigned Week with Dropdown Override */}
+                  {/* Assigned Week */}
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 mb-1 block">
-                      Target Week Number (Manual Override)
+                    <label className="text-[11px] font-mono text-blueprint-muted mb-1 block">
+                      Target Week (Override)
                     </label>
                     <select
                       value={overrideWeek}
@@ -269,11 +259,11 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                         const matched = currentCourse.syllabus_timeline.find((t) => t.week === wk);
                         if (matched) setOverrideTopic(matched.core_topic);
                       }}
-                      className="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs py-2 px-3 rounded-lg focus:ring-1 focus:ring-amber-400 outline-none"
+                      className="w-full bg-blueprint-raised border border-blueprint-border text-blueprint-primary text-xs font-mono py-1.5 px-2.5 rounded focus:border-blueprint-brass outline-none"
                     >
                       {currentCourse.syllabus_timeline.map((w) => (
                         <option key={w.week} value={w.week}>
-                          Week {w.week}: {w.core_topic}
+                          W{String(w.week).padStart(2, '0')}: {w.core_topic}
                         </option>
                       ))}
                     </select>
@@ -281,31 +271,31 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
                   {/* Topic Title */}
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-300 mb-1 block">
+                    <label className="text-[11px] font-mono text-blueprint-muted mb-1 block">
                       Topic Label
                     </label>
                     <input
                       type="text"
                       value={overrideTopic}
                       onChange={(e) => setOverrideTopic(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs py-2 px-3 rounded-lg focus:ring-1 focus:ring-amber-400 outline-none"
+                      className="w-full bg-blueprint-raised border border-blueprint-border text-blueprint-primary text-xs py-1.5 px-2.5 rounded focus:border-blueprint-brass outline-none"
                     />
                   </div>
 
                 </div>
 
-                {/* Reasoning Quote */}
-                <p className="text-[11px] text-slate-400 italic bg-slate-900/50 p-2.5 rounded-lg border border-slate-800">
-                  💡 Reasoning: {analysis.classification.reasoning}
+                {/* Reasoning Note */}
+                <p className="text-[11px] font-mono text-blueprint-secondary bg-blueprint-raised p-2 rounded border border-blueprint-border">
+                  Classification note: {analysis.classification.reasoning}
                 </p>
               </div>
 
               {/* Extracted Text Preview */}
               <div>
-                <label className="text-xs font-bold text-slate-400 block mb-1">
-                  Extracted Content Preview ({analysis.file_name})
+                <label className="text-[11px] font-mono text-blueprint-muted block mb-1">
+                  Extracted Preview ({analysis.file_name})
                 </label>
-                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 text-xs font-mono max-h-36 overflow-y-auto whitespace-pre-wrap">
+                <div className="bg-blueprint-canvas p-3 rounded border border-blueprint-border text-blueprint-secondary text-xs font-mono max-h-32 overflow-y-auto whitespace-pre-wrap">
                   {analysis.extracted_text}
                 </div>
               </div>
@@ -315,32 +305,32 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
         </div>
 
-        {/* Modal Footer Actions */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-campus-border/60 bg-campus-card/50">
+        {/* Modal Footer */}
+        <div className="flex items-center justify-between px-5 py-3 border-t border-blueprint-border bg-blueprint-surface">
           {analysis ? (
             <>
               <button
                 onClick={handleReset}
                 disabled={isSaving}
-                className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 font-semibold px-3 py-2 rounded-lg hover:bg-slate-800 transition"
+                className="flex items-center gap-1 text-xs font-mono text-blueprint-secondary hover:text-blueprint-primary px-2.5 py-1.5 rounded transition"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
-                Upload Another
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reset
               </button>
               <button
                 onClick={handleConfirm}
                 disabled={isSaving}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md transition disabled:opacity-50"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded bg-blueprint-primary hover:bg-white text-blueprint-canvas font-medium text-xs transition duration-150 active:translate-y-px disabled:opacity-50"
               >
                 {isSaving ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Chunking & Indexing...</span>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Indexing Vectors...</span>
                   </>
                 ) : (
                   <>
-                    <span>Confirm & Publish Note</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <span>Confirm & Ingest</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
               </button>
@@ -349,7 +339,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             <div className="w-full flex justify-end">
               <button
                 onClick={onClose}
-                className="text-xs text-slate-400 hover:text-white px-4 py-2 rounded-lg hover:bg-slate-800 font-semibold transition"
+                className="text-xs font-mono text-blueprint-secondary hover:text-blueprint-primary px-3 py-1.5 rounded transition"
               >
                 Cancel
               </button>
@@ -361,3 +351,4 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     </div>
   );
 };
+

@@ -7,18 +7,27 @@ export default {
   theme: {
     extend: {
       colors: {
-        campus: {
-          bg: "#0B0F17",
-          panel: "#121824",
-          card: "#182232",
-          border: "#26354A",
-          muted: "#94A3B8",
-          text: "#F1F5F9",
-          amber: "#F59E0B",
-          amberLight: "#FBBF24",
+        blueprint: {
+          canvas: "#0B1118",
+          surface: "#101923",
+          raised: "#162230",
+          subtle: "#1C2B3C",
+          border: "#1F3044",
+          borderLight: "#2D425C",
+          primary: "#E6EDF3",
+          secondary: "#8D9FA7",
+          muted: "#5A7182",
+          brass: "#D97706",
+          brassHover: "#B45309",
+          cobalt: "#2563EB",
+          cobaltHover: "#1D4ED8",
           emerald: "#10B981",
-          cyan: "#06B6D4"
+          ruby: "#EF4444"
         }
+      },
+      fontFamily: {
+        sans: ['Inter', 'Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       }
     },
   },

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Course } from '../types';
-import { BookOpen, UploadCloud, Sparkles, GraduationCap } from 'lucide-react';
+import { Layers, UploadCloud, ChevronDown, BookOpen } from 'lucide-react';
 
 interface HeaderProps {
   courses: Course[];
@@ -18,57 +18,57 @@ export const Header: React.FC<HeaderProps> = ({
   const currentCourse = courses.find(c => c.course_id === selectedCourseId) || courses[0];
 
   return (
-    <header className="sticky top-0 z-30 w-full border-b border-campus-border/60 bg-campus-bg/85 backdrop-blur-xl px-4 lg:px-8 py-3.5">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+    <header className="sticky top-0 z-30 w-full border-b border-blueprint-border bg-blueprint-surface/95 px-4 lg:px-6 py-2.5">
+      <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
         
-        {/* Brand Logo & Subtitle */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-500/20 ring-1 ring-amber-400/30">
-            <BookOpen className="w-5 h-5 text-slate-950 stroke-[2.5]" />
+        {/* Brand & Context */}
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="w-8 h-8 rounded bg-blueprint-raised border border-blueprint-border flex items-center justify-center text-blueprint-brass flex-shrink-0">
+            <BookOpen className="w-4 h-4 stroke-[2]" />
           </div>
-          <div>
+          <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-xl tracking-tight text-white flex items-center gap-1.5">
-                Campus<span className="text-amber-400">Lore</span>
+              <span className="font-semibold text-sm tracking-tight text-blueprint-primary">
+                CampusLore
               </span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                QUEST / MUET
+              <span className="font-mono text-[10px] text-blueprint-muted border-l border-blueprint-border pl-2 uppercase tracking-wider">
+                QUEST / MUET Curricula
               </span>
             </div>
-            <p className="text-xs text-slate-400 font-medium">
-              Your Campus. Your Notes. Your AI.
-            </p>
+            <span className="text-[11px] text-blueprint-secondary hidden sm:inline-block">
+              Peer-Verified Syllabus Grounding Workstation
+            </span>
           </div>
         </div>
 
-        {/* Course Switcher & Upload Button */}
-        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+        {/* Right Controls: Course Selector & Action Button */}
+        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
           
           {/* Course Selector Dropdown */}
-          <div className="relative flex-1 md:flex-none">
+          <div className="relative flex-1 sm:flex-none">
             <select
               value={selectedCourseId}
               onChange={(e) => onSelectCourse(e.target.value)}
-              className="w-full md:w-72 bg-campus-card/90 text-slate-200 text-xs font-semibold py-2.5 px-3.5 pr-8 rounded-xl border border-campus-border/80 focus:outline-none focus:ring-2 focus:ring-amber-400/40 transition appearance-none cursor-pointer"
+              className="w-full sm:w-64 bg-blueprint-raised text-blueprint-primary text-xs font-mono py-1.5 px-3 pr-8 rounded border border-blueprint-border hover:border-blueprint-borderLight focus:border-blueprint-brass focus:outline-none transition appearance-none cursor-pointer"
             >
               {courses.map((course) => (
-                <option key={course.course_id} value={course.course_id} className="bg-campus-panel py-2 text-slate-200">
-                  {course.course_id}: {course.course_name}
+                <option key={course.course_id} value={course.course_id} className="bg-blueprint-surface text-blueprint-primary">
+                  {course.course_id} • {course.course_name}
                 </option>
               ))}
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
-              <GraduationCap className="w-4 h-4" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-blueprint-muted">
+              <ChevronDown className="w-3.5 h-3.5" />
             </div>
           </div>
 
-          {/* Senior Upload Notes Button */}
+          {/* Action Trigger */}
           <button
             onClick={onOpenUpload}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-blueprint-primary hover:bg-white text-blueprint-canvas font-medium text-xs transition duration-150 active:translate-y-px flex-shrink-0"
           >
-            <UploadCloud className="w-4 h-4 stroke-[2.5]" />
-            <span>Upload Senior Notes</span>
+            <UploadCloud className="w-3.5 h-3.5 stroke-[2.2]" />
+            <span>Upload Notes</span>
           </button>
         </div>
 
@@ -76,3 +76,4 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+

@@ -5,41 +5,36 @@ import { ChatInterface } from './components/ChatInterface';
 import { UploadModal } from './components/UploadModal';
 import { SourceSlideout } from './components/SourceSlideout';
 import { Course, NoteSource } from './types';
-import { fetchSyllabus } from './services/api';
-import { Loader2 } from 'lucide-react';
+import { fetchSyllabus, DEFAULT_COURSES } from './services/api';
 
 export function App() {
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<Course[]>(DEFAULT_COURSES);
   const [selectedCourseId, setSelectedCourseId] = useState<string>('CSE-212');
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
   const [sources, setSources] = useState<NoteSource[]>([]);
   const [activeSourceIndex, setActiveSourceIndex] = useState<number>(0);
   const [isSlideoutOpen, setIsSlideoutOpen] = useState<boolean>(false);
-  const [isLoadingSyllabus, setIsLoadingSyllabus] = useState<boolean>(true);
 
   useEffect(() => {
     async function loadData() {
       try {
         const syllabusList = await fetchSyllabus();
-        setCourses(syllabusList);
-        if (syllabusList.length > 0) {
-          setSelectedCourseId(syllabusList[0].course_id);
+        if (syllabusList && syllabusList.length > 0) {
+          setCourses(syllabusList);
         }
       } catch (err) {
-        console.error('Failed to load syllabus outline:', err);
-      } finally {
-        setIsLoadingSyllabus(false);
+        console.error('Failed to sync live syllabus:', err);
       }
     }
     loadData();
   }, []);
 
-  const currentCourse = courses.find((c) => c.course_id === selectedCourseId) || courses[0];
+  const currentCourse = courses.find((c) => c.course_id === selectedCourseId) || courses[0] || DEFAULT_COURSES[0];
 
   const handleSelectCourse = (id: string) => {
     setSelectedCourseId(id);
-    setSelectedWeek(null); // Return to auto-detect when switching courses
+    setSelectedWeek(null);
   };
 
   const handleOpenSources = (newSources: NoteSource[]) => {
@@ -48,17 +43,8 @@ export function App() {
     setIsSlideoutOpen(true);
   };
 
-  if (isLoadingSyllabus || !currentCourse) {
-    return (
-      <div className="min-h-screen bg-[#0B0F17] flex flex-col items-center justify-center gap-3 text-slate-300">
-        <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
-        <p className="text-xs font-semibold text-slate-400">Loading CampusLore Grounding Syllabus...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#0B0F17] flex flex-col text-slate-100">
+    <div className="min-h-screen bg-blueprint-canvas flex flex-col text-blueprint-primary selection:bg-blueprint-brass/30 selection:text-amber-200">
       
       {/* Top Navigation */}
       <Header
@@ -69,7 +55,7 @@ export function App() {
       />
 
       {/* Main App Workspace */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 lg:px-8 flex flex-col lg:flex-row gap-4 relative">
+      <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 lg:p-4 flex flex-col lg:flex-row gap-3 relative">
         
         {/* Left: Syllabus Timeline Navigation */}
         <TimelineSidebar

@@ -3,16 +3,15 @@ import { Course, SyllabusWeek, ChatMessage, NoteSource } from '../types';
 import { queryRAG } from '../services/api';
 import {
   Send,
-  Sparkles,
-  User,
-  Bot,
-  Layers,
   FileText,
   Copy,
   Check,
   AlertTriangle,
   RotateCcw,
-  BookOpen
+  BookOpen,
+  ArrowUpRight,
+  Terminal,
+  Loader2
 } from 'lucide-react';
 
 interface ChatInterfaceProps {
@@ -49,15 +48,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     scrollToBottom();
   }, [messages, loading]);
 
-  // Reset or initialize welcoming greeting when changing week or going to global
+  // Initial welcome greeting
   useEffect(() => {
     const isGlobal = selectedWeek === null;
     const welcomeMsg: ChatMessage = {
       id: `welcome-${selectedWeek ?? 'global'}`,
       role: 'assistant',
       content: isGlobal
-        ? `Salam! Main aapka Senior AI assistant hoon 🎓.\n\nAapko yaad rakhne ki zaroorat nahi ke kaunsa topic kis week mein hai. **Roman Urdu ya English** mein koi bhi engineering topic poochhein — hamara Agentic Router khud syllabus week map karke accurate peer notes se answer karega!`
-        : `Salam! Main aapka Senior AI assistant hoon. Abhi hum **${course.course_id} — Week ${selectedWeek}: ${currentWeekInfo?.core_topic || 'Syllabus Topic'}** ke context mein hain.\n\nAap Roman Urdu ya English mein jo bhi lab code ya theory ka sawal poochna chahein, pooch sakte hain. Hamare answers strictly seniors ke notes par based hain! 🎓`,
+        ? `Salam! Main aapka Senior Peer Assistant hoon.\n\nAapko yaad rakhne ki zaroorat nahi ke kaunsa topic kis week mein hai. Roman Urdu ya English mein koi bhi engineering topic poochhein — hamara system syllabus timeline map karke senior notes se grounded answer dega.`
+        : `Salam! Abhi hum **${course.course_id} — Week ${selectedWeek}: ${currentWeekInfo?.core_topic || 'Syllabus Topic'}** ke context mein hain.\n\nAap Roman Urdu ya English mein lab code ya theory ka sawal pooch sakte hain. Answers verified senior peer notes par based hain.`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     setMessages([welcomeMsg]);
@@ -101,7 +100,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err: any) {
       console.error('Chat error:', err);
-      setRateLimitError('Hamara AI abhi thoda busy hai ya rate limit hit hui hai. Please take a breath and try in 5 seconds!');
+      setRateLimitError('Server rate limit or temporary latency hit. Please retry in a few seconds.');
     } finally {
       setLoading(false);
     }
@@ -113,11 +112,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Sample quick questions customized per week or global
   const samplePrompts = selectedWeek !== null ? [
-    `Yaar ${currentWeekInfo?.core_topic || 'is topic'} ka main exam concept Roman Urdu mein samjha do`,
-    `Bhai lab test ke liye iska working code snippet aur edge cases bata do`,
-    `Is topic mein seniors ne past papers ke kon se important questions highlight kiye hain?`
+    `Is topic ka main exam concept Roman Urdu mein samjha do`,
+    `Lab test ke liye working code snippet aur edge cases bata do`,
+    `Past papers ke kon se important questions is topic se aate hain?`
   ] : [
     `Queue underflow aur circular modulo logic kya hota hai?`,
     `Dijkstra shortest path algorithm ka exam concept Roman Urdu mein samjha do`,
@@ -125,166 +123,141 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   ];
 
   return (
-    <div className="flex-1 flex flex-col h-[calc(100vh-6.5rem)] glass-panel rounded-2xl border border-campus-border/60 overflow-hidden">
+    <div className="flex-1 flex flex-col h-[calc(100vh-6.2rem)] blueprint-panel rounded overflow-hidden">
       
-      {/* Context Bar */}
-      <div className="px-6 py-3 border-b border-campus-border/60 bg-campus-card/60 flex items-center justify-between flex-wrap gap-2">
+      {/* Context Top Bar */}
+      <div className="px-4 py-2.5 border-b border-blueprint-border bg-blueprint-surface flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2.5">
-          {selectedWeek !== null ? (
-            <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-bold">
-              Week {selectedWeek}
-            </span>
-          ) : (
-            <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-bold flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-slate-950" />
-              Auto-Detect
-            </span>
-          )}
+          <span className="font-mono text-[11px] font-semibold text-blueprint-brass px-1.5 py-0.5 border border-blueprint-border bg-blueprint-raised rounded">
+            {selectedWeek !== null ? `W${String(selectedWeek).padStart(2, '0')}` : 'AUTO-DETECT'}
+          </span>
           <div>
-            <h2 className="text-xs font-bold text-white flex items-center gap-1.5">
-              {selectedWeek !== null ? (currentWeekInfo?.core_topic || 'Syllabus Topic') : 'Universal Semester Knowledge Base'}
+            <h2 className="text-xs font-semibold text-blueprint-primary flex items-center gap-1.5">
+              {selectedWeek !== null ? (currentWeekInfo?.core_topic || 'Syllabus Topic') : 'Semester Knowledge Base'}
             </h2>
-            <p className="text-[10px] text-slate-400">
-              {selectedWeek !== null ? `Sandboxed knowledge base • ${course.course_name}` : `Agentic Week Discovery • Multi-hop retrieval • ${course.course_name}`}
+            <p className="text-[10px] font-mono text-blueprint-muted">
+              {selectedWeek !== null ? `Scope: Week ${selectedWeek} • ${course.course_name}` : `Multi-hop retrieval • ${course.course_id}`}
             </p>
           </div>
         </div>
 
         <button
           onClick={onOpenUpload}
-          className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition"
+          className="text-[11px] font-mono text-blueprint-secondary hover:text-blueprint-primary flex items-center gap-1 px-2 py-1 rounded border border-blueprint-border hover:bg-blueprint-raised transition"
         >
-          <BookOpen className="w-3.5 h-3.5" />
+          <BookOpen className="w-3.5 h-3.5 text-blueprint-brass" />
           <span>Contribute Notes</span>
         </button>
       </div>
 
       {/* Messages Feed */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
         {messages.map((msg) => {
           const isUser = msg.role === 'user';
 
           return (
-            <div
-              key={msg.id}
-              className={`flex gap-3 max-w-3xl ${isUser ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}
-            >
-              {/* Avatar */}
-              <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold ${
-                  isUser
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                    : 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30'
-                }`}
-              >
-                {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4 stroke-[2.5]" />}
-              </div>
-
-              {/* Message Bubble */}
-              <div className="flex flex-col gap-1.5 max-w-[85%] md:max-w-[90%]">
-                <div
-                  className={`p-4 rounded-2xl text-xs md:text-sm leading-relaxed border ${
-                    isUser
-                      ? 'bg-blue-600/20 border-blue-500/30 text-blue-50 rounded-tr-none'
-                      : 'bg-campus-card/90 border-campus-border/70 text-slate-200 rounded-tl-none shadow-sm'
-                  }`}
-                >
-                  {/* Auto-routed Week Badge for Assistant messages in global mode or auto-detected */}
+            <div key={msg.id} className="max-w-4xl space-y-1">
+              
+              {/* Header Meta / Sender */}
+              <div className="flex items-center justify-between text-[11px] font-mono text-blueprint-muted px-1">
+                <div className="flex items-center gap-2">
+                  <span className={`font-semibold ${isUser ? 'text-blueprint-cobalt' : 'text-blueprint-brass'}`}>
+                    {isUser ? '❯ STUDENT QUERY' : '❯ SENIOR PEER GROUNDING'}
+                  </span>
                   {!isUser && msg.auto_detected_week && (
-                    <div className="mb-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-400/10 border border-amber-400/30 text-amber-300 text-[11px] font-semibold">
-                      <Sparkles className="w-3 h-3 text-amber-400" />
-                      <span>📍 Auto-routed to <strong>Week {msg.auto_detected_week}</strong>{msg.detected_topic ? `: ${msg.detected_topic}` : ''}</span>
+                    <span className="text-blueprint-muted">
+                      [ROUTED: W{String(msg.auto_detected_week).padStart(2, '0')}{msg.detected_topic ? ` // ${msg.detected_topic}` : ''}]
                       {onSelectWeek && selectedWeek !== msg.auto_detected_week && (
                         <button
                           onClick={() => onSelectWeek(msg.auto_detected_week!)}
-                          className="ml-1 underline text-[10px] text-amber-400 hover:text-amber-200 font-bold"
+                          className="ml-1.5 text-blueprint-brass hover:underline"
                         >
-                          (View Week)
+                          Focus Week
                         </button>
                       )}
-                    </div>
-                  )}
-
-                  <div className="whitespace-pre-wrap">{msg.content}</div>
-
-                  {/* Sources button if assistant cited sources */}
-                  {!isUser && msg.sources && msg.sources.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-campus-border/50 flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-1.5 text-[11px] text-amber-400 font-semibold">
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>Sourced from {msg.sources.length} peer note{msg.sources.length > 1 ? 's' : ''}</span>
-                      </div>
-                      <button
-                        onClick={() => onOpenSources(msg.sources!)}
-                        className="text-[11px] font-bold px-2.5 py-1 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition flex items-center gap-1"
-                      >
-                        <span>View Verified Source</span>
-                        <Sparkles className="w-3 h-3" />
-                      </button>
-                    </div>
+                    </span>
                   )}
                 </div>
-
-                {/* Message Meta & Copy */}
-                <div
-                  className={`flex items-center gap-2 px-1 text-[10px] text-slate-500 ${
-                    isUser ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  <span>{msg.timestamp}</span>
-                  {!isUser && (
-                    <button
-                      onClick={() => copyToClipboard(msg.content, msg.id)}
-                      className="hover:text-slate-300 flex items-center gap-1 transition"
-                    >
-                      {copiedId === msg.id ? (
-                        <>
-                          <Check className="w-3 h-3 text-emerald-400" />
-                          <span className="text-emerald-400">Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3 h-3" />
-                          <span>Copy</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
+                <span>{msg.timestamp}</span>
               </div>
+
+              {/* Message Body */}
+              <div
+                className={`p-4 rounded border text-xs lg:text-sm leading-relaxed ${
+                  isUser
+                    ? 'bg-blueprint-surface border-blueprint-border text-blueprint-primary'
+                    : 'bg-blueprint-surface/90 border-blueprint-border text-blueprint-primary'
+                }`}
+              >
+                <div className="whitespace-pre-wrap font-sans text-blueprint-primary">{msg.content}</div>
+
+                {/* Sources & Citations */}
+                {!isUser && msg.sources && msg.sources.length > 0 && (
+                  <div className="mt-3.5 pt-3 border-t border-blueprint-border flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-blueprint-muted">
+                      <FileText className="w-3.5 h-3.5 text-blueprint-secondary" />
+                      <span>Referenced {msg.sources.length} senior peer source{msg.sources.length > 1 ? 's' : ''}</span>
+                    </div>
+                    <button
+                      onClick={() => onOpenSources(msg.sources!)}
+                      className="text-[11px] font-mono font-medium px-2.5 py-1 rounded bg-blueprint-raised hover:bg-blueprint-subtle text-blueprint-primary border border-blueprint-border hover:border-blueprint-borderLight transition flex items-center gap-1"
+                    >
+                      <span>Inspect Notes</span>
+                      <ArrowUpRight className="w-3 h-3 text-blueprint-brass" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Message Utilities */}
+              <div className="flex items-center justify-end px-1 text-[10px] font-mono text-blueprint-muted">
+                {!isUser && (
+                  <button
+                    onClick={() => copyToClipboard(msg.content, msg.id)}
+                    className="hover:text-blueprint-primary flex items-center gap-1 transition"
+                  >
+                    {copiedId === msg.id ? (
+                      <>
+                        <Check className="w-3 h-3 text-blueprint-emerald" />
+                        <span className="text-blueprint-emerald">COPIED</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>COPY</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+
             </div>
           );
         })}
 
-        {/* Loading Spinner Indicator */}
+        {/* Loading Indicator */}
         {loading && (
-          <div className="flex gap-3 max-w-3xl mr-auto">
-            <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center flex-shrink-0 animate-pulse">
-              <Bot className="w-4 h-4" />
+          <div className="max-w-4xl space-y-1 animate-in fade-in duration-100">
+            <div className="text-[11px] font-mono text-blueprint-brass px-1">
+              ❯ RETRIEVING PEER GROUNDING...
             </div>
-            <div className="p-4 rounded-2xl rounded-tl-none bg-campus-card/90 border border-campus-border/70 text-slate-300 text-xs flex items-center gap-3">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce [animation-delay:-0.3s]" />
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce [animation-delay:-0.15s]" />
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce" />
-              </div>
-              <span className="text-slate-400 font-medium text-xs">
-                Routing topic across syllabus & querying Groq Qwen-27B...
-              </span>
+            <div className="p-3.5 rounded border border-blueprint-border bg-blueprint-surface text-blueprint-secondary text-xs flex items-center gap-2.5 font-mono">
+              <Loader2 className="w-4 h-4 text-blueprint-brass animate-spin" />
+              <span>Matching syllabus embeddings & querying Groq engine...</span>
             </div>
           </div>
         )}
 
-        {/* Rate Limit / Error Banner */}
+        {/* Rate Limit Error Banner */}
         {rateLimitError && (
-          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between gap-3">
+          <div className="p-3 rounded border border-blueprint-ruby/40 bg-blueprint-surface text-blueprint-ruby text-xs flex items-center justify-between gap-3 font-mono">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               <span>{rateLimitError}</span>
             </div>
             <button
               onClick={() => handleSend()}
-              className="flex items-center gap-1 font-bold text-amber-400 hover:text-amber-200 px-2 py-1 rounded bg-amber-500/20"
+              className="flex items-center gap-1 font-semibold text-blueprint-primary hover:underline px-2 py-1 rounded bg-blueprint-raised border border-blueprint-border"
             >
               <RotateCcw className="w-3 h-3" />
               Retry
@@ -297,49 +270,46 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Suggested Quick Prompts */}
       {messages.length <= 2 && (
-        <div className="px-6 py-2 bg-campus-card/30 border-t border-campus-border/30 flex items-center gap-2 overflow-x-auto">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex-shrink-0">
-            Quick Prompts:
-          </span>
-          {samplePrompts.map((prompt, i) => (
+        <div className="px-4 py-2 bg-blueprint-surface border-t border-blueprint-border flex items-center gap-3 overflow-x-auto text-[11px] font-mono text-blueprint-secondary">
+          <span className="text-blueprint-muted uppercase text-[10px] flex-shrink-0 font-semibold">Suggested:</span>
+          {samplePrompts.map((prompt, idx) => (
             <button
-              key={i}
+              key={idx}
               onClick={() => handleSend(prompt)}
-              className="text-[11px] text-slate-300 bg-slate-900/80 hover:bg-slate-800 hover:text-amber-300 border border-slate-700/60 px-3 py-1 rounded-lg whitespace-nowrap transition"
+              className="whitespace-nowrap hover:text-blueprint-primary hover:underline transition flex-shrink-0"
             >
-              "{prompt.slice(0, 48)}..."
+              {idx + 1}. {prompt}
             </button>
           ))}
         </div>
       )}
 
-      {/* Query Input Box */}
-      <div className="p-4 border-t border-campus-border/60 bg-campus-card/50">
+      {/* Input Command Dock */}
+      <div className="p-3 border-t border-blueprint-border bg-blueprint-surface">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             handleSend();
           }}
-          className="flex items-center gap-2 bg-slate-950/80 rounded-xl border border-campus-border/80 p-1.5 focus-within:border-amber-400/60 focus-within:ring-2 focus-within:ring-amber-500/20 transition"
+          className="flex items-center gap-2"
         >
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={
-              selectedWeek !== null
-                ? `Ask about Week ${selectedWeek} in Roman Urdu or English (e.g. "Yaar pointer reset logic samjha do")...`
-                : `Ask any engineering question in Roman Urdu or English (AI will auto-route to syllabus week)...`
-            }
-            className="flex-1 bg-transparent px-3 py-2 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
-            disabled={loading}
-          />
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask in Roman Urdu or English (e.g. Queue underflow check logic samjha do)..."
+              disabled={loading}
+              className="w-full bg-blueprint-raised text-blueprint-primary text-xs lg:text-sm py-2.5 px-3 rounded border border-blueprint-border focus:border-blueprint-brass focus:outline-none placeholder:text-blueprint-muted/60 transition disabled:opacity-50"
+            />
+          </div>
           <button
             type="submit"
             disabled={!input.trim() || loading}
-            className="p-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-amber-500/20"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded bg-blueprint-primary hover:bg-white disabled:opacity-40 disabled:hover:bg-blueprint-primary text-blueprint-canvas font-medium text-xs transition duration-150 flex-shrink-0 active:translate-y-px"
           >
-            <Send className="w-4 h-4 stroke-[2.5]" />
+            <span>Send</span>
+            <Send className="w-3.5 h-3.5 stroke-[2.2]" />
           </button>
         </form>
       </div>

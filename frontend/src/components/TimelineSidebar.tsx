@@ -1,6 +1,6 @@
 import React from 'react';
 import { Course, SyllabusWeek } from '../types';
-import { Calendar, CheckCircle2, ChevronRight, FileText, Layers, Sparkles, Compass } from 'lucide-react';
+import { Compass, ChevronRight, FileText, Check } from 'lucide-react';
 
 interface TimelineSidebarProps {
   course: Course;
@@ -18,118 +18,96 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
   const weeks = course.syllabus_timeline;
 
   return (
-    <aside className="w-full lg:w-80 flex-shrink-0 flex flex-col glass-panel rounded-2xl p-4 h-[calc(100vh-6.5rem)] overflow-hidden border border-campus-border/60">
+    <aside className="w-full lg:w-80 flex-shrink-0 flex flex-col blueprint-panel rounded h-[calc(100vh-6.2rem)] overflow-hidden">
       
       {/* Sidebar Header */}
-      <div className="pb-3 mb-2 border-b border-campus-border/50">
+      <div className="p-3.5 border-b border-blueprint-border bg-blueprint-surface">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-slate-200">
-            <Layers className="w-4 h-4 text-amber-400" />
-            <h2 className="font-bold text-sm tracking-tight">Syllabus Timeline</h2>
-          </div>
-          <span className="text-[10px] font-semibold text-slate-400 bg-campus-card px-2 py-0.5 rounded-md border border-campus-border/40">
-            {weeks.length} Key Weeks
+          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-blueprint-muted">
+            Syllabus Outline
+          </span>
+          <span className="font-mono text-[10px] text-blueprint-muted">
+            {weeks.length} WEEKS
           </span>
         </div>
-        <p className="text-[11px] text-slate-400 mt-1">
-          Select a week or use Universal AI routing across the whole semester.
+        <p className="text-[11px] text-blueprint-secondary mt-1">
+          Select target week or use automatic semantic routing.
         </p>
       </div>
 
       {/* Global / Auto-Detect Option */}
-      <div className="mb-3">
+      <div className="p-2 border-b border-blueprint-border bg-blueprint-surface/50">
         <button
           onClick={() => onSelectWeek(null)}
-          className={`w-full text-left p-2.5 rounded-xl transition-all duration-150 border flex items-center justify-between ${
+          className={`w-full text-left p-2.5 rounded transition-colors duration-100 flex items-center justify-between border ${
             selectedWeek === null
-              ? 'bg-amber-400/15 border-amber-400 text-amber-300 shadow-md shadow-amber-500/10'
-              : 'bg-campus-card/60 hover:bg-campus-card border-campus-border/40 text-slate-300 hover:border-campus-border/80'
+              ? 'bg-blueprint-raised border-l-2 border-l-blueprint-brass border-blueprint-borderLight text-blueprint-primary font-medium'
+              : 'bg-transparent border-transparent hover:bg-blueprint-raised/50 text-blueprint-secondary hover:text-blueprint-primary'
           }`}
         >
-          <div className="flex items-center gap-2">
-            <div className={`p-1.5 rounded-lg ${selectedWeek === null ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-amber-400'}`}>
-              <Compass className="w-4 h-4 stroke-[2.5]" />
-            </div>
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-blueprint-brass font-semibold">
+              AUTO
+            </span>
             <div>
-              <div className="text-xs font-bold flex items-center gap-1">
-                <span>All Weeks / Auto-Detect</span>
-                <Sparkles className="w-3 h-3 text-amber-400" />
-              </div>
-              <p className="text-[10px] text-slate-400">Agentic week discovery</p>
+              <div className="text-xs font-semibold">All Weeks / Auto-Detect</div>
+              <p className="text-[10px] font-mono text-blueprint-muted">Autonomous semantic routing</p>
             </div>
           </div>
           {selectedWeek === null && (
-            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-400 text-slate-950">
-              ACTIVE
+            <span className="font-mono text-[10px] text-blueprint-brass">
+              [ACTIVE]
             </span>
           )}
         </button>
       </div>
 
       {/* Week Timeline List */}
-      <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+      <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {weeks.map((item: SyllabusWeek) => {
           const isSelected = selectedWeek === item.week;
           const count = noteCounts[item.week] || 0;
+          const weekPadded = String(item.week).padStart(2, '0');
 
           return (
             <button
               key={item.week}
               onClick={() => onSelectWeek(item.week)}
-              className={`w-full text-left p-3 rounded-xl transition-all duration-150 border flex flex-col gap-2 relative ${
+              className={`w-full text-left p-2.5 rounded transition-colors duration-100 flex flex-col gap-1.5 border ${
                 isSelected
-                  ? 'bg-amber-500/10 border-amber-500/50 shadow-sm shadow-amber-500/10'
-                  : 'bg-campus-card/50 hover:bg-campus-card border-campus-border/40 hover:border-campus-border/80'
+                  ? 'bg-blueprint-raised border-l-2 border-l-blueprint-brass border-blueprint-borderLight text-blueprint-primary font-medium'
+                  : 'bg-transparent border-transparent hover:bg-blueprint-raised/50 text-blueprint-secondary hover:text-blueprint-primary'
               }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span
-                    className={`text-xs font-black px-2 py-0.5 rounded-md ${
-                      isSelected
-                        ? 'bg-amber-400 text-slate-950 font-bold'
-                        : 'bg-slate-800 text-amber-400 border border-amber-500/20'
-                    }`}
-                  >
-                    Week {item.week}
+                  <span className={`font-mono text-[11px] font-semibold ${isSelected ? 'text-blueprint-brass' : 'text-blueprint-muted'}`}>
+                    W{weekPadded}
                   </span>
-                  <span className="text-[11px] font-medium text-slate-300 line-clamp-1">
+                  <span className="text-xs font-medium text-blueprint-primary truncate max-w-[180px]">
                     {item.core_topic}
                   </span>
                 </div>
                 <ChevronRight
                   className={`w-3.5 h-3.5 transition-transform ${
-                    isSelected ? 'text-amber-400 translate-x-0.5' : 'text-slate-500'
+                    isSelected ? 'text-blueprint-brass' : 'text-blueprint-muted/50'
                   }`}
                 />
               </div>
 
-              {/* Grounding Keywords Pills */}
-              <div className="flex flex-wrap gap-1">
-                {item.grounding_keywords.slice(0, 3).map((kw, i) => (
-                  <span
-                    key={i}
-                    className="text-[10px] px-1.5 py-0.5 rounded bg-slate-900/60 text-slate-400 border border-slate-700/40"
-                  >
-                    #{kw}
-                  </span>
-                ))}
-                {item.grounding_keywords.length > 3 && (
-                  <span className="text-[10px] text-slate-500 self-center">
-                    +{item.grounding_keywords.length - 3} more
-                  </span>
-                )}
+              {/* Keywords as clean inline metadata */}
+              <div className="text-[10px] font-mono text-blueprint-muted truncate pl-6">
+                {item.grounding_keywords.join(' · ')}
               </div>
 
-              {/* Status Badge */}
-              <div className="flex items-center justify-between pt-1 border-t border-campus-border/30 text-[10px]">
-                <span className="flex items-center gap-1 text-emerald-400 font-medium">
-                  <CheckCircle2 className="w-3 h-3" />
+              {/* Status row */}
+              <div className="flex items-center justify-between pt-1 border-t border-blueprint-border/40 text-[10px] font-mono pl-6">
+                <span className="flex items-center gap-1 text-blueprint-emerald">
+                  <Check className="w-3 h-3 stroke-[2.5]" />
                   Grounded
                 </span>
-                <span className="text-slate-400 flex items-center gap-1">
-                  <FileText className="w-3 h-3 text-slate-500" />
-                  {count > 0 ? `${count} peer notes` : 'Syllabus Ready'}
+                <span className="text-blueprint-muted">
+                  {count > 0 ? `${count} peer notes` : 'Indexed'}
                 </span>
               </div>
             </button>

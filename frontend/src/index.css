@@ -8,45 +8,46 @@
 
 body {
   margin: 0;
-  background-color: #0B0F17;
-  color: #F1F5F9;
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #0B1118;
+  color: #E6EDF3;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 code, pre {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Custom modern scrollbar */
+/* Custom precision scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #0B0F17;
+  background: #0B1118;
 }
 ::-webkit-scrollbar-thumb {
-  background: #26354A;
-  border-radius: 9999px;
+  background: #1F3044;
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3B82F6;
+  background: #2D425C;
 }
 
-.glass-panel {
-  background: rgba(18, 24, 36, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* Blueprint Workstation Solid Panels */
+.blueprint-panel {
+  background-color: #101923;
+  border: 1px solid #1F3044;
 }
 
-.glass-card {
-  background: rgba(24, 34, 50, 0.7);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+.blueprint-card {
+  background-color: #162230;
+  border: 1px solid #1F3044;
 }
 
-.glow-amber {
-  box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.25);
+.blueprint-subtle {
+  background-color: #1C2B3C;
+  border: 1px solid #1F3044;
 }
