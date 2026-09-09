@@ -235,15 +235,44 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           );
         })}
 
-        {/* Loading Indicator */}
+        {/* Structured Workstation Skeleton Screen */}
         {loading && (
-          <div className="max-w-4xl space-y-1 animate-in fade-in duration-100">
-            <div className="text-[11px] font-mono text-blueprint-brass px-1">
-              ❯ RETRIEVING PEER GROUNDING...
+          <div className="max-w-4xl space-y-2 animate-pulse" aria-busy="true" aria-label="Loading grounding answer">
+            {/* Skeleton Header */}
+            <div className="flex items-center justify-between text-[11px] font-mono px-1">
+              <div className="flex items-center gap-2">
+                <span className="text-blueprint-brass font-semibold">❯ RETRIEVING PEER GROUNDING...</span>
+                <div className="h-3 w-32 bg-blueprint-raised rounded border border-blueprint-border" />
+              </div>
+              <div className="h-3 w-12 bg-blueprint-raised rounded" />
             </div>
-            <div className="p-3.5 rounded border border-blueprint-border bg-blueprint-surface text-blueprint-secondary text-xs flex items-center gap-2.5 font-mono">
-              <Loader2 className="w-4 h-4 text-blueprint-brass animate-spin" />
-              <span>Matching syllabus embeddings & querying Groq engine...</span>
+
+            {/* Skeleton Response Card */}
+            <div className="p-4 rounded border border-blueprint-border bg-blueprint-surface/90 space-y-3">
+              {/* Content skeleton lines */}
+              <div className="space-y-2">
+                <div className="h-3.5 bg-blueprint-raised rounded w-full border border-blueprint-border/40" />
+                <div className="h-3.5 bg-blueprint-raised rounded w-11/12 border border-blueprint-border/40" />
+                <div className="h-3.5 bg-blueprint-raised rounded w-4/5 border border-blueprint-border/40" />
+                <div className="h-3.5 bg-blueprint-raised rounded w-3/4 border border-blueprint-border/40" />
+              </div>
+
+              {/* Code Block Skeleton Placeholder */}
+              <div className="p-3 bg-blueprint-canvas rounded border border-blueprint-border space-y-2 my-2 font-mono">
+                <div className="flex items-center justify-between pb-1.5 border-b border-blueprint-border/50">
+                  <div className="h-2.5 w-24 bg-blueprint-raised rounded" />
+                  <div className="h-2.5 w-10 bg-blueprint-raised rounded" />
+                </div>
+                <div className="h-3 bg-blueprint-raised/80 rounded w-2/3" />
+                <div className="h-3 bg-blueprint-raised/80 rounded w-1/2" />
+                <div className="h-3 bg-blueprint-raised/80 rounded w-3/5" />
+              </div>
+
+              {/* Citations Footer Skeleton */}
+              <div className="pt-3 border-t border-blueprint-border flex items-center justify-between">
+                <div className="h-3 w-44 bg-blueprint-raised rounded" />
+                <div className="h-6 w-24 bg-blueprint-raised rounded border border-blueprint-border" />
+              </div>
             </div>
           </div>
         )}

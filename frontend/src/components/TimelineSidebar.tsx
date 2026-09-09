@@ -7,13 +7,15 @@ interface TimelineSidebarProps {
   selectedWeek: number | null;
   onSelectWeek: (week: number | null) => void;
   noteCounts?: Record<number, number>;
+  isLoading?: boolean;
 }
 
 export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
   course,
   selectedWeek,
   onSelectWeek,
-  noteCounts = {}
+  noteCounts = {},
+  isLoading = false
 }) => {
   const weeks = course.syllabus_timeline;
 
@@ -27,7 +29,7 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
             Syllabus Outline
           </span>
           <span className="font-mono text-[10px] text-blueprint-muted">
-            {weeks.length} WEEKS
+            {isLoading ? '...' : `${weeks.length} WEEKS`}
           </span>
         </div>
         <p className="text-[11px] text-blueprint-secondary mt-1">
@@ -64,7 +66,18 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
 
       {/* Week Timeline List */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {weeks.map((item: SyllabusWeek) => {
+        {isLoading ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="p-2.5 rounded border border-blueprint-border/40 bg-blueprint-surface space-y-2 animate-pulse">
+              <div className="flex items-center justify-between">
+                <div className="h-3 w-10 bg-blueprint-raised rounded" />
+                <div className="h-3 w-32 bg-blueprint-raised rounded" />
+              </div>
+              <div className="h-2 w-24 bg-blueprint-raised/60 rounded" />
+            </div>
+          ))
+        ) : (
+          weeks.map((item: SyllabusWeek) => {
           const isSelected = selectedWeek === item.week;
           const count = noteCounts[item.week] || 0;
           const weekPadded = String(item.week).padStart(2, '0');
@@ -112,7 +125,7 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
               </div>
             </button>
           );
-        })}
+        }))}
       </div>
     </aside>
   );
