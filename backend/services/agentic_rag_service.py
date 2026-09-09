@@ -25,33 +25,39 @@ def clean_llm_text(text: str) -> str:
 def analyze_and_expand_query(
     query: str,
     active_week: Optional[int] = None,
-    course_id: str = "CSE-212"
+    course_id: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Agent Planning Step:
-    - Autonomously detects the syllabus week if student hasn't selected one
+    - Autonomously detects if the question belongs to a specific syllabus week/course or is a general query
     - Detects language style (English, Roman Urdu, or Code-Switch)
-    - Generates targeted technical sub-queries for multi-hop retrieval
+    - Generates targeted technical sub-queries for retrieval
     """
     syllabi = load_syllabus()
-    syllabus_context = [
-        {"week": w["week"], "topic": w["core_topic"], "keywords": w.get("grounding_keywords", [])}
-        for c in syllabi if c["course_id"] == course_id for w in c.get("syllabus_timeline", [])
-    ]
     
-    # If active_week is not provided or 0, use heuristic mapping first as a seed
+    # Filter courses if a specific course_id is active and not universal
+    if course_id and course_id != "UNIVERSAL":
+        syllabus_context = [
+            {"course_id": c["course_id"], "week": w["week"], "topic": w["core_topic"], "keywords": w.get("grounding_keywords", [])}
+            for c in syllabi if c["course_id"] == course_id for w in c.get("syllabus_timeline", [])
+        ]
+    else:
+        syllabus_context = [
+            {"course_id": c["course_id"], "week": w["week"], "topic": w["core_topic"], "keywords": w.get("grounding_keywords", [])}
+            for c in syllabi for w in c.get("syllabus_timeline", [])
+        ]
+    
     auto_detected_week = active_week
-    if not auto_detected_week or auto_detected_week <= 0:
-        heuristic_res = heuristic_classify(query, course_id)
-        auto_detected_week = heuristic_res.get("assigned_week", 1)
 
     if not GROQ_API_KEY:
         return {
-            "language_mode": "bilingual_auto",
-            "target_weeks": [auto_detected_week],
-            "primary_week": auto_detected_week,
-            "expanded_queries": [query, f"{query} implementation c++", f"{query} formula"],
-            "reasoning": "Heuristic fallback"
+            "is_general": False if active_week else False,
+            "language_mode": "english",
+            "course_id": course_id,
+            "target_weeks": [active_week] if active_week else [],
+            "primary_week": active_week,
+            "expanded_queries": [query],
+            "reasoning": "Fallback"
         }
         
     try:
@@ -59,26 +65,36 @@ def analyze_and_expand_query(
         client = Groq(api_key=GROQ_API_KEY)
         
         system_prompt = (
-            "You are an intelligent academic router and query planner for university engineering courses.\n"
-            "Analyze the student's question and syllabus timeline.\n"
-            "Determine the EXACT syllabus week number this question belongs to (or multiple weeks if comparative).\n"
-            "Output a JSON block with this structure:\n"
+            "You are CampusLore's intelligent academic router and query planner.\n"
+            "Analyze the student's question against the university syllabus catalog.\n\n"
+            "RULES:\n"
+            "1. If the question matches an engineering/CS syllabus topic (e.g. data structures, subnetting, recursion, OS, graphs):\n"
+            "   - Identify 'course_id', 'primary_week', and 'detected_topic'.\n"
+            "   - Set 'is_general': false\n"
+            "   - Generate 2-3 expanded technical English sub-queries.\n"
+            "2. If the question is general knowledge, pop culture, history, greetings, or general non-syllabus discussion (e.g. 'what is batman', 'hello', 'who is alan turing'):\n"
+            "   - Set 'is_general': true\n"
+            "   - Set 'course_id': null, 'primary_week': null, 'detected_topic': null\n"
+            "   - Set 'target_weeks': []\n"
+            "   - 'expanded_queries': [question]\n\n"
+            "Respond ONLY with a JSON object in this format:\n"
             "```json\n"
             "{\n"
-            '  "language_mode": "english" or "roman_urdu" or "bilingual_mixed",\n'
-            '  "primary_week": 5,\n'
+            '  "is_general": false,\n'
+            '  "course_id": "CSE-212" or null,\n'
+            '  "primary_week": 5 or null,\n'
             '  "target_weeks": [5],\n'
-            '  "detected_topic": "Topic Name",\n'
-            '  "expanded_queries": ["query 1 (technical English)", "query 2 (implementation)", "query 3 (edge cases)"],\n'
-            '  "is_comparative": false\n'
+            '  "detected_topic": "Topic Name" or null,\n'
+            '  "expanded_queries": ["query 1", "query 2"],\n'
+            '  "language_mode": "english" or "roman_urdu"\n'
             "}\n"
             "```"
         )
         
         user_msg = (
-            f"Course: {course_id}\n"
-            f"User Active Week Context: {active_week or 'AUTO-DETECT (User did not specify a week)'}\n"
-            f"Syllabus Timeline Reference: {json.dumps(syllabus_context)}\n"
+            f"Active Scope Context: {course_id or 'UNIVERSAL (All Subjects)'}\n"
+            f"User Active Week Context: {active_week or 'None (Auto-detect)'}\n"
+            f"Syllabus Catalog: {json.dumps(syllabus_context)}\n"
             f"Student Question: {query}"
         )
         
@@ -100,16 +116,13 @@ def analyze_and_expand_query(
             plan = json.loads(json_match.group(0))
         else:
             plan = {
-                "language_mode": "bilingual_mixed",
+                "is_general": False,
+                "language_mode": "english",
                 "primary_week": auto_detected_week,
-                "target_weeks": [auto_detected_week],
+                "target_weeks": [auto_detected_week] if auto_detected_week else [],
                 "expanded_queries": [query]
             }
             
-        if not plan.get("primary_week"):
-            plan["primary_week"] = auto_detected_week
-        if not plan.get("target_weeks"):
-            plan["target_weeks"] = [plan["primary_week"]]
         if not plan.get("expanded_queries"):
             plan["expanded_queries"] = [query]
             
@@ -117,43 +130,53 @@ def analyze_and_expand_query(
     except Exception as e:
         logger.error(f"Query analysis error: {e}")
         return {
-            "language_mode": "bilingual_mixed",
+            "is_general": False,
+            "language_mode": "english",
             "primary_week": auto_detected_week,
-            "target_weeks": [auto_detected_week],
-            "expanded_queries": [query, f"{query} implementation", f"{query} concept"]
+            "target_weeks": [auto_detected_week] if auto_detected_week else [],
+            "expanded_queries": [query]
         }
 
 # 2. BATCH VECTOR RETRIEVAL + RECIPROCAL RANK FUSION (RRF)
 def execute_rrf_retrieval(
     plan: Dict[str, Any],
-    course_id: str,
+    course_id: Optional[str] = None,
     match_threshold: float = 0.18,
     max_total_sources: int = 5,
     rrf_k: int = 60
 ) -> List[Dict[str, Any]]:
     """
     Optimized Retrieval Engine:
-    1. Batch computes embeddings for all expanded sub-queries in 1 matrix pass.
-    2. Runs vector similarity across target weeks.
-    3. Reranks candidate note chunks using Reciprocal Rank Fusion (RRF).
+    1. Skips vector retrieval if the query is general / non-syllabus.
+    2. Batch computes embeddings for expanded sub-queries.
+    3. Searches vector database and ranks candidate chunks using RRF.
     """
-    target_weeks = plan.get("target_weeks", [1])
+    if plan.get("is_general"):
+        return []
+
+    target_weeks = plan.get("target_weeks", [])
     queries = plan.get("expanded_queries", [])
     if not queries:
         return []
 
-    # Batch embedding (1 matrix operation instead of sequential loop)
+    # Target course filter: use plan course_id if universal
+    filter_course = course_id if (course_id and course_id != "UNIVERSAL") else plan.get("course_id")
+
+    # Batch embedding
     query_vectors = get_embeddings_batch(queries)
     
     # Candidate pool: chunk_id -> (chunk_dict, rrf_score, max_sim)
     candidate_scores: Dict[str, Dict[str, Any]] = {}
     
+    # If no target weeks are specified, search with week=None
+    weeks_to_search = target_weeks if target_weeks else [None]
+
     for q_idx, q_vec in enumerate(query_vectors):
-        for wk in target_weeks:
+        for wk in weeks_to_search:
             results = search_similar_notes(
                 query_embedding=q_vec,
                 filter_week=wk,
-                filter_course=course_id,
+                filter_course=filter_course,
                 match_threshold=match_threshold,
                 match_count=4
             )
@@ -202,41 +225,45 @@ def build_bilingual_synthesis_prompt(
     query: str,
     plan: Dict[str, Any],
     sources: List[Dict[str, Any]],
-    course_id: str
+    course_id: Optional[str] = None
 ) -> Tuple[str, str]:
-    language_mode = plan.get("language_mode", "bilingual_mixed")
-    primary_week = plan.get("primary_week", 1)
+    language_mode = plan.get("language_mode", "english")
+    primary_week = plan.get("primary_week")
+    target_course = plan.get("course_id") or course_id or "Universal"
     
     if sources:
         context_parts = []
         for idx, src in enumerate(sources, 1):
             context_parts.append(
-                f"--- [Peer Note {idx} | File: {src.get('file_name', 'Note')} | Week: {src.get('week_number', primary_week)} | Topic: {src.get('topic', 'General')} | Relevance: {src.get('similarity', 0):.2f}] ---\n"
+                f"--- [Peer Note {idx} | File: {src.get('file_name', 'Note')} | Week: {src.get('week_number', 'N/A')} | Topic: {src.get('topic', 'General')} | Relevance: {src.get('similarity', 0):.2f}] ---\n"
                 f"{src.get('content', '')}"
             )
         context_str = "\n\n".join(context_parts)
     else:
-        context_str = "No specific peer notes found in database for this exact topic yet."
+        context_str = "No specific senior peer notes needed or found for this question."
 
     system_prompt = (
-        "You are CampusLore Senior AI, a precise, highly knowledgeable engineering senior and academic mentor.\n"
-        "Your mission is to guide students through difficult engineering concepts, lab practicals, viva questions, and exam preparation.\n\n"
-        "COMMUNICATION RULES:\n"
-        "- Default Language: Respond in clear, structured, technical English with clean markdown and formatted code blocks.\n"
-        "- If the student explicitly queries in Roman Urdu -> Adapt and explain technical concepts in accessible Roman Urdu.\n"
-        "- Grounding: Strictly ground explanations in the verified senior peer notes provided.\n"
-        "- Code: Provide working, commented code snippets with time/space complexity and common edge cases.\n"
-        "- Output Format: Clean, direct markdown only. Never output internal reasoning or think tags."
+        "You are CampusLore, an advanced, developer-grade academic assistant and engineering mentor.\n"
+        "Your mission is to deliver clear, precise, and directly helpful answers.\n\n"
+        "RESPONSE GUIDELINES:\n"
+        "- If the student asks a general question, general knowledge, or basic concept: Answer it directly, informatively, and politely. Never say 'your question is unrelated to course XYZ'.\n"
+        "- If syllabus notes are provided: Ground your explanation in the verified peer notes, highlighting code examples, mathematical proofs, time/space complexity, and exam edge cases.\n"
+        "- Tone: Professional, developer-grade, and concise.\n"
+        "- Language: Default to clear technical English. Only use Roman Urdu if the student specifically asks in Roman Urdu.\n"
+        "- Markdown Formatting: Always format answers in clean Markdown (use bolding **like this**, bullet lists, and fenced code blocks ```cpp ... ``` with syntax highlighting)."
     )
+
+    meta_desc = f"Scope: {target_course}"
+    if primary_week:
+        meta_desc += f" | Week {primary_week}"
+    if plan.get("detected_topic"):
+        meta_desc += f" | Topic: {plan.get('detected_topic')}"
 
     user_prompt = (
         f"STUDENT QUESTION:\n{query}\n\n"
-        f"AGENTIC ROUTER METADATA:\n"
-        f"- Target Course: {course_id}\n"
-        f"- Auto-Detected Syllabus Week: Week {primary_week}\n"
-        f"- Language Mode: {language_mode}\n\n"
-        f"GROUNDED PEER CONTEXT:\n{context_str}\n\n"
-        f"Provide a comprehensive, bilingual-adapted answer:"
+        f"ROUTER METADATA:\n{meta_desc}\n\n"
+        f"GROUNDED CONTEXT:\n{context_str}\n\n"
+        f"Provide a structured, well-formatted Markdown response:"
     )
     
     return system_prompt, user_prompt
@@ -245,34 +272,34 @@ def build_bilingual_synthesis_prompt(
 def run_agentic_rag(
     query: str,
     week_number: Optional[int] = None,
-    course_id: str = "CSE-212"
+    course_id: Optional[str] = None
 ) -> Dict[str, Any]:
     start_time = time.time()
     
     # Step 1: Autonomous Analysis & Week Discovery
     plan = analyze_and_expand_query(query, week_number, course_id)
-    primary_week = plan.get("primary_week", 1)
+    primary_week = plan.get("primary_week")
+    detected_course = plan.get("course_id") or course_id
     
     # Step 2: Batch Embedding + RRF Reranking
-    sources = execute_rrf_retrieval(plan, course_id)
+    sources = execute_rrf_retrieval(plan, detected_course)
     
     # Step 3: Self-RAG Document Grader
     grade, graded_sources = grade_retrieval_relevance(query, sources)
     
-    # If low relevance and only 1 week searched, expand search to adjacent weeks
-    if grade == "LOW" and len(plan.get("target_weeks", [])) == 1:
-        logger.info("Low relevance detected. Expanding search to adjacent syllabus weeks...")
+    # If low relevance and only 1 week searched, expand search to adjacent syllabus weeks if week is known
+    if grade == "LOW" and primary_week and len(plan.get("target_weeks", [])) == 1:
         expanded = [primary_week]
         if primary_week > 1: expanded.append(primary_week - 1)
         if primary_week < 16: expanded.append(primary_week + 1)
         plan["target_weeks"] = expanded
-        graded_sources = execute_rrf_retrieval(plan, course_id, match_threshold=0.15)
+        graded_sources = execute_rrf_retrieval(plan, detected_course, match_threshold=0.15)
         
-    # Step 4: Bilingual Synthesis
-    sys_prompt, user_prompt = build_bilingual_synthesis_prompt(query, plan, graded_sources, course_id)
+    # Step 4: Synthesis
+    sys_prompt, user_prompt = build_bilingual_synthesis_prompt(query, plan, graded_sources, detected_course)
     
     if not GROQ_API_KEY:
-        answer = f"**[Demo Mode]** Question received: '{query}'. Auto-routed to Week {primary_week}."
+        answer = f"**CampusLore** received question: '{query}'."
     else:
         try:
             from groq import Groq
@@ -284,26 +311,26 @@ def run_agentic_rag(
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.25,
-                max_tokens=650
+                max_tokens=700
             )
             raw_text = resp.choices[0].message.content or ""
             answer = clean_llm_text(raw_text)
         except Exception as e:
             logger.error(f"Agentic inference error: {e}")
-            answer = f"Hamara AI abhi busy hai. Please try again! (Error: {str(e)})"
+            answer = f"Service temporarily busy. Please try again. (Details: {str(e)})"
 
     latency = time.time() - start_time
     
     return {
         "answer": answer,
         "week_number": primary_week,
-        "course_id": course_id,
+        "course_id": detected_course,
         "sources": graded_sources,
         "query": query,
         "agentic_meta": {
             "auto_detected_week": primary_week,
             "detected_topic": plan.get("detected_topic"),
-            "language_mode": plan.get("language_mode", "bilingual"),
+            "language_mode": plan.get("language_mode", "english"),
             "expanded_queries": plan.get("expanded_queries", [query]),
             "relevance_grade": grade,
             "latency_seconds": round(latency, 2)
@@ -313,15 +340,16 @@ def run_agentic_rag(
 async def stream_agentic_rag(
     query: str,
     week_number: Optional[int] = None,
-    course_id: str = "CSE-212"
+    course_id: Optional[str] = None
 ) -> AsyncGenerator[str, None]:
     """
     Streams Agentic RAG tokens with Server-Sent Events (SSE).
     """
     plan = analyze_and_expand_query(query, week_number, course_id)
-    primary_week = plan.get("primary_week", 1)
-    sources = execute_rrf_retrieval(plan, course_id)
-    sys_prompt, user_prompt = build_bilingual_synthesis_prompt(query, plan, sources, course_id)
+    primary_week = plan.get("primary_week")
+    detected_course = plan.get("course_id") or course_id
+    sources = execute_rrf_retrieval(plan, detected_course)
+    sys_prompt, user_prompt = build_bilingual_synthesis_prompt(query, plan, sources, detected_course)
 
     if not GROQ_API_KEY:
         yield f"data: {json.dumps({'type': 'token', 'content': 'GROQ_API_KEY not configured.'})}\n\n"
@@ -330,11 +358,10 @@ async def stream_agentic_rag(
     from groq import Groq
     client = Groq(api_key=GROQ_API_KEY)
     
-    # Emit metadata event first
     meta_event = {
         "type": "meta",
         "auto_detected_week": primary_week,
-        "language_mode": plan.get("language_mode", "bilingual"),
+        "language_mode": plan.get("language_mode", "english"),
         "sources": sources
     }
     yield f"data: {json.dumps(meta_event)}\n\n"
@@ -346,12 +373,11 @@ async def stream_agentic_rag(
             {"role": "user", "content": user_prompt}
         ],
         temperature=0.25,
-        max_tokens=650,
+        max_tokens=700,
         stream=True
     )
     
     for chunk in stream:
         delta = chunk.choices[0].delta.content or ""
         if delta:
-            # Clean think tags if streaming
             yield f"data: {json.dumps({'type': 'token', 'content': delta})}\n\n"

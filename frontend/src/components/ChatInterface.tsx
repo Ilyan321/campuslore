@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Course, SyllabusWeek, ChatMessage, NoteSource, ChatSession } from '../types';
 import { queryRAG } from '../services/api';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import {
   Send,
   FileText,
@@ -82,7 +83,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       const response = await queryRAG({
         query: textToSend.trim(),
         week_number: selectedWeek,
-        course_id: selectedCourseId || "CSE-212"
+        course_id: selectedCourseId || undefined
       });
 
       const assistantMessage: ChatMessage = {
@@ -91,7 +92,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         content: response.answer,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         sources: response.sources,
-        auto_detected_week: response.agentic_meta?.auto_detected_week || response.week_number,
+        auto_detected_week: response.agentic_meta?.auto_detected_week || response.week_number || undefined,
         detected_topic: response.agentic_meta?.detected_topic,
         language_mode: response.agentic_meta?.language_mode
       };
@@ -154,11 +155,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <div className="flex items-center justify-between text-[11px] font-mono text-blueprint-muted px-1">
                 <div className="flex items-center gap-2">
                   <span className={`font-semibold ${isUser ? 'text-blueprint-cobalt' : 'text-blueprint-brass'}`}>
-                    {isUser ? '❯ STUDENT QUERY' : '❯ SENIOR PEER GROUNDING'}
+                    {isUser ? 'Student' : 'CampusLore'}
                   </span>
-                  {!isUser && msg.auto_detected_week && (
+                  {!isUser && msg.auto_detected_week && msg.detected_topic && (
                     <span className="text-blueprint-muted">
-                      [ROUTED: W{String(msg.auto_detected_week).padStart(2, '0')}{msg.detected_topic ? ` // ${msg.detected_topic}` : ''}]
+                      [ROUTED: W{String(msg.auto_detected_week).padStart(2, '0')} // {msg.detected_topic}]
                     </span>
                   )}
                 </div>
@@ -173,7 +174,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     : 'bg-blueprint-surface/90 border-blueprint-border text-blueprint-primary'
                 }`}
               >
-                <div className="whitespace-pre-wrap font-sans text-blueprint-primary">{msg.content}</div>
+                {isUser ? (
+                  <div className="whitespace-pre-wrap font-sans text-blueprint-primary">{msg.content}</div>
+                ) : (
+                  <MarkdownRenderer content={msg.content} />
+                )}
 
                 {/* Sources & Citations */}
                 {!isUser && msg.sources && msg.sources.length > 0 && (

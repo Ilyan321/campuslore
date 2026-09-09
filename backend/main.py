@@ -157,7 +157,7 @@ def query_rag(payload: QueryRequest):
         result = run_agentic_rag(
             query=payload.query,
             week_number=payload.week_number,
-            course_id=payload.course_id or "CSE-212"
+            course_id=payload.course_id
         )
         return result
     except Exception as e:

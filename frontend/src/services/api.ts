@@ -87,11 +87,11 @@ export async function confirmIngest(payload: {
 export async function queryRAG(payload: {
   query: string;
   week_number?: number | null;
-  course_id: string;
+  course_id?: string | null;
 }): Promise<{
   answer: string;
-  week_number: number;
-  course_id: string;
+  week_number?: number | null;
+  course_id?: string | null;
   sources: NoteSource[];
   agentic_meta?: {
     auto_detected_week?: number;
