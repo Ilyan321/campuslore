@@ -1,23 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Course, SyllabusWeek } from '../types';
-import { Compass, ChevronRight, FileText, Check } from 'lucide-react';
+import { ChevronRight, ChevronDown, Check, BookOpen } from 'lucide-react';
 
 interface TimelineSidebarProps {
-  course: Course;
+  courses: Course[];
+  selectedCourseId: string | null;
   selectedWeek: number | null;
-  onSelectWeek: (week: number | null) => void;
-  noteCounts?: Record<number, number>;
+  onSelectTopic: (courseId: string | null, week: number | null) => void;
   isLoading?: boolean;
 }
 
 export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
-  course,
+  courses,
+  selectedCourseId,
   selectedWeek,
-  onSelectWeek,
-  noteCounts = {},
+  onSelectTopic,
   isLoading = false
 }) => {
-  const weeks = course.syllabus_timeline;
+  const [expandedCourses, setExpandedCourses] = useState<Record<string, boolean>>({
+    'CSE-212': true,
+    'CSE-305': true
+  });
+
+  const toggleCourse = (courseId: string) => {
+    setExpandedCourses(prev => ({
+      ...prev,
+      [courseId]: !prev[courseId]
+    }));
+  };
+
+  const totalWeeks = courses.reduce((acc, c) => acc + (c.syllabus_timeline?.length || 0), 0);
 
   return (
     <aside className="w-full lg:w-80 flex-shrink-0 flex flex-col blueprint-panel rounded h-[calc(100vh-6.2rem)] overflow-hidden">
@@ -26,23 +38,23 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
       <div className="p-3.5 border-b border-blueprint-border bg-blueprint-surface">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-blueprint-muted">
-            Syllabus Outline
+            Universal Knowledge Index
           </span>
           <span className="font-mono text-[10px] text-blueprint-muted">
-            {isLoading ? '...' : `${weeks.length} WEEKS`}
+            {courses.length} COURSES • {totalWeeks} WEEKS
           </span>
         </div>
         <p className="text-[11px] text-blueprint-secondary mt-1">
-          Select target week or use automatic semantic routing.
+          Universal multi-subject grounding index.
         </p>
       </div>
 
       {/* Global / Auto-Detect Option */}
       <div className="p-2 border-b border-blueprint-border bg-blueprint-surface/50">
         <button
-          onClick={() => onSelectWeek(null)}
+          onClick={() => onSelectTopic(null, null)}
           className={`w-full text-left p-2.5 rounded transition-colors duration-100 flex items-center justify-between border ${
-            selectedWeek === null
+            selectedCourseId === null && selectedWeek === null
               ? 'bg-blueprint-raised border-l-2 border-l-blueprint-brass border-blueprint-borderLight text-blueprint-primary font-medium'
               : 'bg-transparent border-transparent hover:bg-blueprint-raised/50 text-blueprint-secondary hover:text-blueprint-primary'
           }`}
@@ -52,11 +64,11 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
               AUTO
             </span>
             <div>
-              <div className="text-xs font-semibold">All Weeks / Auto-Detect</div>
-              <p className="text-[10px] font-mono text-blueprint-muted">Autonomous semantic routing</p>
+              <div className="text-xs font-semibold">All Subjects / Auto-Detect</div>
+              <p className="text-[10px] font-mono text-blueprint-muted">Universal cross-course routing</p>
             </div>
           </div>
-          {selectedWeek === null && (
+          {selectedCourseId === null && selectedWeek === null && (
             <span className="font-mono text-[10px] text-blueprint-brass">
               [ACTIVE]
             </span>
@@ -64,8 +76,8 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
         </button>
       </div>
 
-      {/* Week Timeline List */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      {/* Multi-Course Timeline List */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-3">
         {isLoading ? (
           Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="p-2.5 rounded border border-blueprint-border/40 bg-blueprint-surface space-y-2 animate-pulse">
@@ -77,55 +89,74 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
             </div>
           ))
         ) : (
-          weeks.map((item: SyllabusWeek) => {
-          const isSelected = selectedWeek === item.week;
-          const count = noteCounts[item.week] || 0;
-          const weekPadded = String(item.week).padStart(2, '0');
+          courses.map((course) => {
+            const isExpanded = expandedCourses[course.course_id] ?? true;
 
-          return (
-            <button
-              key={item.week}
-              onClick={() => onSelectWeek(item.week)}
-              className={`w-full text-left p-2.5 rounded transition-colors duration-100 flex flex-col gap-1.5 border ${
-                isSelected
-                  ? 'bg-blueprint-raised border-l-2 border-l-blueprint-brass border-blueprint-borderLight text-blueprint-primary font-medium'
-                  : 'bg-transparent border-transparent hover:bg-blueprint-raised/50 text-blueprint-secondary hover:text-blueprint-primary'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={`font-mono text-[11px] font-semibold ${isSelected ? 'text-blueprint-brass' : 'text-blueprint-muted'}`}>
-                    W{weekPadded}
-                  </span>
-                  <span className="text-xs font-medium text-blueprint-primary truncate max-w-[180px]">
-                    {item.core_topic}
-                  </span>
-                </div>
-                <ChevronRight
-                  className={`w-3.5 h-3.5 transition-transform ${
-                    isSelected ? 'text-blueprint-brass' : 'text-blueprint-muted/50'
-                  }`}
-                />
-              </div>
+            return (
+              <div key={course.course_id} className="space-y-1">
+                {/* Course Accordion Header */}
+                <button
+                  onClick={() => toggleCourse(course.course_id)}
+                  className="w-full flex items-center justify-between px-2 py-1 text-left text-xs font-mono font-semibold text-blueprint-secondary hover:text-blueprint-primary hover:bg-blueprint-raised/40 rounded transition"
+                >
+                  <div className="flex items-center gap-1.5 truncate">
+                    <BookOpen className="w-3.5 h-3.5 text-blueprint-brass flex-shrink-0" />
+                    <span className="text-blueprint-primary font-semibold">{course.course_id}</span>
+                    <span className="text-blueprint-muted truncate font-sans text-[11px]">• {course.course_name}</span>
+                  </div>
+                  {isExpanded ? (
+                    <ChevronDown className="w-3.5 h-3.5 text-blueprint-muted flex-shrink-0" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5 text-blueprint-muted flex-shrink-0" />
+                  )}
+                </button>
 
-              {/* Keywords as clean inline metadata */}
-              <div className="text-[10px] font-mono text-blueprint-muted truncate pl-6">
-                {item.grounding_keywords.join(' · ')}
-              </div>
+                {/* Course Weeks */}
+                {isExpanded && (
+                  <div className="space-y-1 pl-1">
+                    {course.syllabus_timeline.map((item: SyllabusWeek) => {
+                      const isSelected = selectedCourseId === course.course_id && selectedWeek === item.week;
+                      const weekPadded = String(item.week).padStart(2, '0');
 
-              {/* Status row */}
-              <div className="flex items-center justify-between pt-1 border-t border-blueprint-border/40 text-[10px] font-mono pl-6">
-                <span className="flex items-center gap-1 text-blueprint-emerald">
-                  <Check className="w-3 h-3 stroke-[2.5]" />
-                  Grounded
-                </span>
-                <span className="text-blueprint-muted">
-                  {count > 0 ? `${count} peer notes` : 'Indexed'}
-                </span>
+                      return (
+                        <button
+                          key={item.week}
+                          onClick={() => onSelectTopic(course.course_id, item.week)}
+                          className={`w-full text-left p-2 rounded transition-colors duration-100 flex flex-col gap-1 border ${
+                            isSelected
+                              ? 'bg-blueprint-raised border-l-2 border-l-blueprint-brass border-blueprint-borderLight text-blueprint-primary font-medium'
+                              : 'bg-transparent border-transparent hover:bg-blueprint-raised/50 text-blueprint-secondary hover:text-blueprint-primary'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className={`font-mono text-[10px] font-semibold ${isSelected ? 'text-blueprint-brass' : 'text-blueprint-muted'}`}>
+                                W{weekPadded}
+                              </span>
+                              <span className="text-xs font-medium text-blueprint-primary truncate max-w-[170px]">
+                                {item.core_topic}
+                              </span>
+                            </div>
+                            <ChevronRight
+                              className={`w-3 h-3 transition-transform ${
+                                isSelected ? 'text-blueprint-brass' : 'text-blueprint-muted/40'
+                              }`}
+                            />
+                          </div>
+
+                          {/* Keywords */}
+                          <div className="text-[10px] font-mono text-blueprint-muted truncate pl-5">
+                            {item.grounding_keywords.slice(0, 3).join(' · ')}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </button>
-          );
-        }))}
+            );
+          })
+        )}
       </div>
     </aside>
   );

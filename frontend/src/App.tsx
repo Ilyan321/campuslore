@@ -9,7 +9,7 @@ import { fetchSyllabus, DEFAULT_COURSES } from './services/api';
 
 export function App() {
   const [courses, setCourses] = useState<Course[]>(DEFAULT_COURSES);
-  const [selectedCourseId, setSelectedCourseId] = useState<string>('CSE-212');
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
   const [sources, setSources] = useState<NoteSource[]>([]);
@@ -30,11 +30,9 @@ export function App() {
     loadData();
   }, []);
 
-  const currentCourse = courses.find((c) => c.course_id === selectedCourseId) || courses[0] || DEFAULT_COURSES[0];
-
-  const handleSelectCourse = (id: string) => {
-    setSelectedCourseId(id);
-    setSelectedWeek(null);
+  const handleSelectTopic = (courseId: string | null, week: number | null) => {
+    setSelectedCourseId(courseId);
+    setSelectedWeek(week);
   };
 
   const handleOpenSources = (newSources: NoteSource[]) => {
@@ -48,27 +46,26 @@ export function App() {
       
       {/* Top Navigation */}
       <Header
-        courses={courses}
-        selectedCourseId={selectedCourseId}
-        onSelectCourse={handleSelectCourse}
         onOpenUpload={() => setIsUploadOpen(true)}
       />
 
       {/* Main App Workspace */}
       <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 lg:p-4 flex flex-col lg:flex-row gap-3 relative">
         
-        {/* Left: Syllabus Timeline Navigation */}
+        {/* Left: Universal Syllabus Timeline Navigation */}
         <TimelineSidebar
-          course={currentCourse}
+          courses={courses}
+          selectedCourseId={selectedCourseId}
           selectedWeek={selectedWeek}
-          onSelectWeek={(wk) => setSelectedWeek(wk)}
+          onSelectTopic={handleSelectTopic}
         />
 
-        {/* Center: Contextual Chat Interface */}
+        {/* Center: Universal Contextual Chat Interface */}
         <ChatInterface
-          course={currentCourse}
+          courses={courses}
+          selectedCourseId={selectedCourseId}
           selectedWeek={selectedWeek}
-          onSelectWeek={(wk) => setSelectedWeek(wk)}
+          onSelectTopic={handleSelectTopic}
           onOpenSources={handleOpenSources}
           onOpenUpload={() => setIsUploadOpen(true)}
         />
@@ -80,7 +77,6 @@ export function App() {
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
         courses={courses}
-        selectedCourseId={selectedCourseId}
         onUploadSuccess={() => {
           // Re-fetch notes or show confirmation
         }}

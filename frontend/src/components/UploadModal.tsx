@@ -17,7 +17,6 @@ interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   courses: Course[];
-  selectedCourseId: string;
   onUploadSuccess: () => void;
 }
 
@@ -25,10 +24,9 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   isOpen,
   onClose,
   courses,
-  selectedCourseId,
   onUploadSuccess
 }) => {
-  const [courseId, setCourseId] = useState(selectedCourseId);
+  const [courseId, setCourseId] = useState<string>('CSE-212');
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -150,20 +148,24 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           {/* Target Course Selector */}
           <div>
             <label className="block text-[11px] font-mono uppercase tracking-wider text-blueprint-muted mb-1">
-              Target Course Syllabus
+              Course Code / Subject Name
             </label>
-            <select
+            <input
+              type="text"
+              list="course-suggestions"
               value={courseId}
               onChange={(e) => setCourseId(e.target.value)}
               disabled={loading || analysis !== null}
+              placeholder="e.g. CSE-212, CSE-305, CSE-310 Operating Systems..."
               className="w-full bg-blueprint-raised text-blueprint-primary text-xs font-mono py-2 px-3 rounded border border-blueprint-border focus:border-blueprint-brass outline-none disabled:opacity-50"
-            >
+            />
+            <datalist id="course-suggestions">
               {courses.map((c) => (
                 <option key={c.course_id} value={c.course_id}>
-                  {c.course_id} • {c.course_name}
+                  {c.course_name}
                 </option>
               ))}
-            </select>
+            </datalist>
           </div>
 
           {/* Success Banner */}

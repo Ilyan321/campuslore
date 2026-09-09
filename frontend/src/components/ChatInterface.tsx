@@ -15,17 +15,19 @@ import {
 } from 'lucide-react';
 
 interface ChatInterfaceProps {
-  course: Course;
+  courses: Course[];
+  selectedCourseId: string | null;
   selectedWeek: number | null;
-  onSelectWeek?: (week: number) => void;
+  onSelectTopic: (courseId: string | null, week: number | null) => void;
   onOpenSources: (sources: NoteSource[]) => void;
   onOpenUpload: () => void;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
-  course,
+  courses,
+  selectedCourseId,
   selectedWeek,
-  onSelectWeek,
+  onSelectTopic,
   onOpenSources,
   onOpenUpload
 }) => {
@@ -36,8 +38,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const currentWeekInfo = selectedWeek !== null 
-    ? course.syllabus_timeline.find((w) => w.week === selectedWeek)
+  const currentCourse = courses.find((c) => c.course_id === selectedCourseId);
+  const currentWeekInfo = (currentCourse && selectedWeek !== null)
+    ? currentCourse.syllabus_timeline.find((w) => w.week === selectedWeek)
     : null;
 
   const scrollToBottom = () => {
@@ -50,18 +53,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Initial welcome greeting
   useEffect(() => {
-    const isGlobal = selectedWeek === null;
+    const isGlobal = selectedCourseId === null && selectedWeek === null;
     const welcomeMsg: ChatMessage = {
-      id: `welcome-${selectedWeek ?? 'global'}`,
+      id: `welcome-${selectedCourseId ?? 'global'}-${selectedWeek ?? 'all'}`,
       role: 'assistant',
       content: isGlobal
-        ? `Salam! Main aapka Senior Peer Assistant hoon.\n\nAapko yaad rakhne ki zaroorat nahi ke kaunsa topic kis week mein hai. Roman Urdu ya English mein koi bhi engineering topic poochhein — hamara system syllabus timeline map karke senior notes se grounded answer dega.`
-        : `Salam! Abhi hum **${course.course_id} — Week ${selectedWeek}: ${currentWeekInfo?.core_topic || 'Syllabus Topic'}** ke context mein hain.\n\nAap Roman Urdu ya English mein lab code ya theory ka sawal pooch sakte hain. Answers verified senior peer notes par based hain.`,
+        ? `Salam! Main aapka Universal Academic Assistant hoon.\n\nAapko course ya syllabus week select karne ki zaroorat nahi hai. Roman Urdu ya English mein koi bhi computer science ya engineering question poochhein — hamara agentic router khud subject aur week map karke verified senior notes se answer dega.`
+        : `Salam! Abhi hum **${currentCourse?.course_id || 'Course'} — Week ${selectedWeek}: ${currentWeekInfo?.core_topic || 'Syllabus Topic'}** ke focus context mein hain.\n\nAap Roman Urdu ya English mein jo bhi lab code ya theory ka sawal poochhein, answers verified peer notes par based hain.`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
     setMessages([welcomeMsg]);
     setRateLimitError(null);
-  }, [selectedWeek, course.course_id]);
+  }, [selectedCourseId, selectedWeek]);
 
   const handleSend = async (queryText?: string) => {
     const textToSend = queryText || input;
@@ -83,7 +86,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       const response = await queryRAG({
         query: textToSend.trim(),
         week_number: selectedWeek,
-        course_id: course.course_id
+        course_id: selectedCourseId || "CSE-212"
       });
 
       const assistantMessage: ChatMessage = {
@@ -129,14 +132,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div className="px-4 py-2.5 border-b border-blueprint-border bg-blueprint-surface flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2.5">
           <span className="font-mono text-[11px] font-semibold text-blueprint-brass px-1.5 py-0.5 border border-blueprint-border bg-blueprint-raised rounded">
-            {selectedWeek !== null ? `W${String(selectedWeek).padStart(2, '0')}` : 'AUTO-DETECT'}
+            {selectedWeek !== null ? `W${String(selectedWeek).padStart(2, '0')}` : 'UNIVERSAL'}
           </span>
           <div>
             <h2 className="text-xs font-semibold text-blueprint-primary flex items-center gap-1.5">
-              {selectedWeek !== null ? (currentWeekInfo?.core_topic || 'Syllabus Topic') : 'Semester Knowledge Base'}
+              {selectedWeek !== null ? (currentWeekInfo?.core_topic || 'Syllabus Topic') : 'Universal Academic Knowledge Base'}
             </h2>
             <p className="text-[10px] font-mono text-blueprint-muted">
-              {selectedWeek !== null ? `Scope: Week ${selectedWeek} • ${course.course_name}` : `Multi-hop retrieval • ${course.course_id}`}
+              {selectedWeek !== null ? `Scope: ${currentCourse?.course_id || 'Course'} • Week ${selectedWeek}` : 'Autonomous cross-course semantic discovery & grounding'}
             </p>
           </div>
         </div>
@@ -167,14 +170,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   {!isUser && msg.auto_detected_week && (
                     <span className="text-blueprint-muted">
                       [ROUTED: W{String(msg.auto_detected_week).padStart(2, '0')}{msg.detected_topic ? ` // ${msg.detected_topic}` : ''}]
-                      {onSelectWeek && selectedWeek !== msg.auto_detected_week && (
-                        <button
-                          onClick={() => onSelectWeek(msg.auto_detected_week!)}
-                          className="ml-1.5 text-blueprint-brass hover:underline"
-                        >
-                          Focus Week
-                        </button>
-                      )}
                     </span>
                   )}
                 </div>
