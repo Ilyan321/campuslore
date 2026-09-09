@@ -77,6 +77,45 @@ SEED_NOTES = [
         )
     },
     {
+        "course_id": "CSE-212",
+        "week_number": 4,
+        "topic": "Stack Data Structure & Expression Parsing",
+        "file_name": "stack_operations_and_postfix_lab.cpp",
+        "content": (
+            "QUEST Nawabshah CSE-212 DSA Lab #4: Stack Data Structure (LIFO) & Postfix Evaluation in C++\n"
+            "Key Principle: LIFO (Last In First Out). Elements are inserted and deleted from the same end called `top`.\n\n"
+            "Operations & Conditions:\n"
+            "1. Push: Check `top == MAX - 1` (Stack Overflow). If not full, `top++` and `stack[top] = item`.\n"
+            "2. Pop: Check `top == -1` (Stack Underflow). If not empty, return `stack[top--]`.\n"
+            "3. Peek: Return `stack[top]` without removing.\n\n"
+            "Expression Evaluation (Infix to Postfix):\n"
+            "- Operands go straight to postfix output.\n"
+            "- Operators are pushed to stack based on precedence (`^` > `*`, `/` > `+`, `-`).\n"
+            "- Left parenthesis `(` pushed to stack; right parenthesis `)` pops stack until `(` is encountered.\n\n"
+            "Viva Tip: Stack is used internally by CPU for function calls (Call Stack) and recursion backtrack."
+        )
+    },
+    {
+        "course_id": "CSE-212",
+        "week_number": 3,
+        "topic": "Linked Lists (Singly & Doubly)",
+        "file_name": "linked_list_traversal_lab.cpp",
+        "content": (
+            "QUEST Nawabshah CSE-212 DSA Lab #3: Singly Linked List Implementation\n"
+            "Structure:\n"
+            "```cpp\n"
+            "struct Node {\n"
+            "    int data;\n"
+            "    Node* next;\n"
+            "    Node(int val) : data(val), next(nullptr) {}\n"
+            "};\n"
+            "```\n"
+            "Insertion at Head: `newNode->next = head; head = newNode;` (O(1))\n"
+            "Insertion at Tail: Traverse to last node `while(temp->next != nullptr)`, then `temp->next = newNode;` (O(N))\n"
+            "Deletion: Handle head deletion by updating `head = head->next` and freeing old head. Always prevent memory leaks with `delete temp`."
+        )
+    },
+    {
         "course_id": "CSE-305",
         "week_number": 5,
         "topic": "IP Addressing, CIDR & Subnetting",
