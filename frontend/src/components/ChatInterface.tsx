@@ -13,7 +13,8 @@ import {
   ArrowUpRight,
   Terminal,
   Loader2,
-  Sparkles
+  Sparkles,
+  ChevronDown
 } from 'lucide-react';
 
 interface ChatInterfaceProps {
@@ -42,8 +43,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isStreaming, setIsStreaming] = useState(false);
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const lastUserMsgRef = useRef<HTMLDivElement>(null);
+
   const currentCourse = courses.find((c) => c.course_id === selectedCourseId);
   const currentWeekInfo = (currentCourse && selectedWeek !== null)
     ? currentCourse.syllabus_timeline.find((w) => w.week === selectedWeek)
@@ -51,13 +56,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const messages = activeSession?.messages || [];
 
+  const handleContainerScroll = () => {
+    if (!messagesContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 120;
+    setShowScrollBottom(!isNearBottom);
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Only scroll on initial welcome greeting load if needed
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, loading, isStreaming]);
+    if (messages.length <= 1) {
+      scrollToBottom();
+    }
+  }, [activeSession?.id]);
 
   const handleSend = async (queryText?: string) => {
     const textToSend = queryText || input;
@@ -86,6 +101,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (!queryText) setInput('');
     setLoading(true);
     setRateLimitError(null);
+
+    // Smoothly scroll to the new question so reading begins naturally from the top of the answer
+    setTimeout(() => {
+      lastUserMsgRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
 
     const assistantMsgId = `ai-${Date.now()}`;
     let accumulatedContent = '';
@@ -213,12 +233,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
 
       {/* Messages Feed */}
-      <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
-        {messages.map((msg) => {
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleContainerScroll}
+        className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5 relative"
+      >
+        {messages.map((msg, idx) => {
           const isUser = msg.role === 'user';
+          const isLastUser = isUser && idx === messages.map(m => m.role).lastIndexOf('user');
 
           return (
-            <div key={msg.id} className="max-w-4xl space-y-1">
+            <div
+              key={msg.id}
+              ref={isLastUser ? lastUserMsgRef : undefined}
+              className="max-w-4xl space-y-1"
+            >
               
               {/* Header Meta / Sender */}
               <div className="flex items-center justify-between text-[11px] font-mono text-blueprint-muted px-1">
@@ -360,6 +389,20 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             >
               <RotateCcw className="w-3 h-3" />
               Retry
+            </button>
+          </div>
+        )}
+
+        {/* Floating Jump to Latest Button */}
+        {showScrollBottom && (
+          <div className="sticky bottom-2 flex justify-end pointer-events-none z-20">
+            <button
+              type="button"
+              onClick={scrollToBottom}
+              className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blueprint-raised/95 hover:bg-blueprint-subtle text-blueprint-primary border border-blueprint-brass/50 shadow-xl text-xs font-mono transition-all duration-150 backdrop-blur"
+            >
+              <span>Jump to latest</span>
+              <ChevronDown className="w-3.5 h-3.5 text-blueprint-brass" />
             </button>
           </div>
         )}
