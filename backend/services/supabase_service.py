@@ -39,17 +39,22 @@ def upload_file_to_storage(bucket_name: str, file_path: str, file_bytes: bytes, 
         logger.error(f"Error uploading file to Supabase storage: {e}")
         return f"/storage/{bucket_name}/{file_path}"
 
-def insert_note_chunks(chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def insert_note_chunks(chunks: List[Dict[str, Any]], batch_size: int = 25) -> List[Dict[str, Any]]:
     """
-    Inserts note chunks into the 'notes' table.
+    Inserts note chunks into the 'notes' table in safe batches to prevent payload/timeout limits.
     """
     client = get_supabase_client()
     if not client:
         logger.info(f"Supabase not connected. Stored {len(chunks)} chunks in local memory.")
         return chunks
     try:
-        response = client.table("notes").insert(chunks).execute()
-        return response.data
+        all_inserted = []
+        for i in range(0, len(chunks), batch_size):
+            batch = chunks[i : i + batch_size]
+            response = client.table("notes").insert(batch).execute()
+            if response.data:
+                all_inserted.extend(response.data)
+        return all_inserted
     except Exception as e:
         logger.error(f"Error inserting note chunks: {e}")
         raise e

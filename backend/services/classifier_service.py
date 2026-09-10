@@ -99,7 +99,7 @@ def classify_syllabus_week(text: str, course_id: Optional[str] = None) -> Dict[s
             '  "assigned_week": 5,\n'
             '  "topic": "Queue Data Structure & Circular Implementations",\n'
             '  "confidence": 0.95,\n'
-            '  "reasoning": "Brief 1-sentence reason"\n'
+            '  "reasoning": "Concise 1-sentence explanation under 20 words"\n'
             "}"
         )
         
@@ -113,7 +113,7 @@ def classify_syllabus_week(text: str, course_id: Optional[str] = None) -> Dict[s
             ],
             response_format={"type": "json_object"},
             temperature=0.1,
-            max_tokens=250
+            max_tokens=600
         )
         
         content = response.choices[0].message.content

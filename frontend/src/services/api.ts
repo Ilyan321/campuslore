@@ -31,9 +31,9 @@ export const DEFAULT_COURSES: Course[] = [
 ];
 
 /**
- * Exponential backoff retry utility for network robustness against Render free-tier cold starts.
+ * Exponential backoff retry utility for network robustness against Render free-tier cold starts and transient reconnects.
  */
-async function fetchWithRetry(url: string, options: RequestInit, retries = 3, delayMs = 1000): Promise<Response> {
+async function fetchWithRetry(url: string, options: RequestInit, retries = 3, delayMs = 1200): Promise<Response> {
   let lastError: any = null;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -56,7 +56,7 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = 3, de
 export async function fetchSyllabus(): Promise<Course[]> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const timeoutId = setTimeout(() => controller.abort(), 4500);
     const res = await fetch(`${API_BASE_URL}/api/syllabus`, { signal: controller.signal });
     clearTimeout(timeoutId);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -77,7 +77,7 @@ export async function analyzeFile(file: File, courseId?: string): Promise<Analys
   const res = await fetchWithRetry(`${API_BASE_URL}/api/ingest/analyze`, {
     method: 'POST',
     body: formData
-  }, 2, 800);
+  }, 3, 1000);
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ detail: 'Failed to analyze note' }));
@@ -99,7 +99,7 @@ export async function confirmIngest(payload: {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
-  }, 2, 1000);
+  }, 3, 1200);
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'Failed to confirm ingestion' }));
