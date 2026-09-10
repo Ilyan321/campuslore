@@ -28,7 +28,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
   const processedContent = useMemo(() => normalizeLatexDelimiters(content), [content]);
 
   return (
-    <div className="markdown-content text-xs lg:text-sm leading-relaxed space-y-2.5 font-sans text-blueprint-primary">
+    <div className="markdown-content text-xs lg:text-sm leading-relaxed space-y-2.5 font-sans text-blueprint-primary min-w-0 w-full overflow-hidden break-words [overflow-wrap:anywhere]">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
@@ -43,35 +43,35 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
           ),
           // Headings
           h1: ({ children }) => (
-            <h1 className="text-base font-bold text-blueprint-primary mt-3 mb-1.5 border-b border-blueprint-border pb-1">
+            <h1 className="text-base font-bold text-blueprint-primary mt-3 mb-1.5 border-b border-blueprint-border pb-1 break-words">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-sm font-semibold text-blueprint-primary mt-2.5 mb-1 text-blueprint-brass">
+            <h2 className="text-sm font-semibold text-blueprint-primary mt-2.5 mb-1 text-blueprint-brass break-words">
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-xs font-semibold text-blueprint-primary mt-2 mb-1">
+            <h3 className="text-xs font-semibold text-blueprint-primary mt-2 mb-1 break-words">
               {children}
             </h3>
           ),
           // Paragraphs
           p: ({ children }) => (
-            <p className="mb-2 leading-relaxed text-blueprint-primary last:mb-0">
+            <p className="mb-2 leading-relaxed text-blueprint-primary last:mb-0 break-words [overflow-wrap:anywhere]">
               {children}
             </p>
           ),
           // Unordered Lists
           ul: ({ children }) => (
-            <ul className="list-disc pl-5 my-2 space-y-1 text-blueprint-secondary">
+            <ul className="list-disc pl-5 my-2 space-y-1 text-blueprint-secondary break-words">
               {children}
             </ul>
           ),
           // Ordered Lists
           ol: ({ children }) => (
-            <ol className="list-decimal pl-5 my-2 space-y-1 text-blueprint-secondary">
+            <ol className="list-decimal pl-5 my-2 space-y-1 text-blueprint-secondary break-words">
               {children}
             </ol>
           ),

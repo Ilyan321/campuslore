@@ -372,7 +372,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <div
               key={msg.id}
               ref={isLastUser ? lastUserMsgRef : undefined}
-              className="max-w-4xl space-y-1 mx-auto"
+              className="max-w-4xl w-full min-w-0 space-y-1 mx-auto"
             >
               
               {/* Header Meta / Sender */}
@@ -392,7 +392,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
               {/* Message Body */}
               <div
-                className={`p-4 rounded border text-xs lg:text-sm leading-relaxed ${
+                className={`p-4 rounded border text-xs lg:text-sm leading-relaxed w-full min-w-0 overflow-hidden break-words [overflow-wrap:anywhere] ${
                   isUser
                     ? 'bg-blueprint-surface border-blueprint-border text-blueprint-primary'
                     : 'bg-blueprint-surface/90 border-blueprint-border text-blueprint-primary'
@@ -411,7 +411,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 )}
 
                 {isUser ? (
-                  <div className="whitespace-pre-wrap font-sans text-blueprint-primary">{msg.content}</div>
+                  <div className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] font-sans text-blueprint-primary">{msg.content}</div>
                 ) : (
                   <MarkdownRenderer content={msg.content} />
                 )}
