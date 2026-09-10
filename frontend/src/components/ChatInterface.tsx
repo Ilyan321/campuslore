@@ -243,6 +243,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     : 'bg-blueprint-surface/90 border-blueprint-border text-blueprint-primary'
                 }`}
               >
+                {/* Notice when answering via General AI parametric knowledge without local peer notes */}
+                {!isUser && !msg.id.startsWith('msg-welcome') && (!msg.sources || msg.sources.length === 0) && (
+                  <div className="mb-3.5 pb-2.5 border-b border-blueprint-border/60 flex items-center justify-between gap-2 text-[11px] font-mono bg-blueprint-raised/50 px-3 py-2 rounded">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-blueprint-brass flex-shrink-0" />
+                      <span className="text-blueprint-brass font-medium">Quick AI Overview</span>
+                      <span className="text-blueprint-muted">· No matching peer notes found</span>
+                    </div>
+                    <span className="text-[10px] text-blueprint-muted hidden sm:inline font-mono">General Knowledge</span>
+                  </div>
+                )}
+
                 {isUser ? (
                   <div className="whitespace-pre-wrap font-sans text-blueprint-primary">{msg.content}</div>
                 ) : (
