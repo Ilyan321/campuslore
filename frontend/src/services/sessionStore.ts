@@ -7,7 +7,28 @@ export function getStoredSessions(): ChatSession[] {
   try {
     const raw = localStorage.getItem(SESSIONS_STORAGE_KEY);
     if (!raw) return [];
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((s): s is ChatSession => Boolean(s && typeof s === 'object' && s.id && Array.isArray(s.messages)))
+      .map((s) => ({
+        id: String(s.id),
+        title: String(s.title || 'Academic Inquiry'),
+        created_at: String(s.created_at || new Date().toISOString()),
+        updated_at: String(s.updated_at || new Date().toISOString()),
+        course_id: s.course_id || null,
+        week_number: typeof s.week_number === 'number' ? s.week_number : null,
+        messages: (s.messages || []).map((m: any, idx: number) => ({
+          id: String(m?.id || `msg-${idx}`),
+          role: m?.role === 'user' ? 'user' : 'assistant',
+          content: String(m?.content || ''),
+          timestamp: String(m?.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })),
+          sources: Array.isArray(m?.sources) ? m.sources : [],
+          auto_detected_week: m?.auto_detected_week,
+          detected_topic: m?.detected_topic,
+          language_mode: m?.language_mode
+        }))
+      }));
   } catch (err) {
     console.error('Failed to parse stored chat sessions:', err);
     return [];
