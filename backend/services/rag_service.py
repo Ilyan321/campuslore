@@ -101,7 +101,7 @@ def execute_rag_pipeline(
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.3,
-                max_tokens=650
+                max_tokens=1500
             )
             raw_answer = response.choices[0].message.content or ""
             answer = clean_llm_response(raw_answer)
@@ -166,7 +166,7 @@ async def stream_rag_pipeline(
             {"role": "user", "content": user_prompt}
         ],
         temperature=0.3,
-        max_tokens=650,
+        max_tokens=1500,
         stream=True
     )
     for chunk in stream:

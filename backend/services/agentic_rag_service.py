@@ -288,7 +288,9 @@ def build_bilingual_synthesis_prompt(
         "- Multi-Turn Awareness: Seamlessly reference previous context from the chat when the user asks follow-up questions.\n"
         "- Tone: Professional, developer-grade, and concise.\n"
         "- Language: Default to clear technical English. Only use Roman Urdu if the student specifically asks in Roman Urdu.\n"
-        "- Markdown Formatting: Always format answers in clean Markdown (use bolding **like this**, bullet lists, and fenced code blocks ```cpp ... ``` with syntax highlighting)."
+        "- Markdown Formatting: Always format answers in clean Markdown (use bolding **like this**, bullet lists, and fenced code blocks ```cpp ... ``` with syntax highlighting).\n"
+        "- Mathematical & Scientific Notation: Format math formulas cleanly using standard LaTeX enclosed in $$ ... $$ for block/display equations or $ ... $ for inline expressions. Always ensure all equation brackets and matrix environments are properly opened and closed.\n"
+        "- Completeness: Deliver a thorough, comprehensive response and always complete all sentences, sections, and formulas cleanly without cutting off."
     )
 
     meta_desc = f"Scope: {target_course}"
@@ -360,7 +362,7 @@ def run_agentic_rag(
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.25,
-                max_tokens=700
+                max_tokens=1500
             )
             raw_text = resp.choices[0].message.content or ""
             answer = clean_llm_text(raw_text)
@@ -425,7 +427,7 @@ async def stream_agentic_rag(
                 {"role": "user", "content": user_prompt}
             ],
             temperature=0.25,
-            max_tokens=700,
+            max_tokens=1500,
             stream=True
         )
         

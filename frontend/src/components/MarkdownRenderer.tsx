@@ -1,17 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { Copy, Check, Terminal } from 'lucide-react';
 
 interface MarkdownRendererProps {
   content: string;
 }
 
+/**
+ * Normalizes various LaTeX math delimiters (\[ ... \], \( ... \), and raw equation brackets)
+ * into standard $$ ... $$ and $ ... $ so remark-math and KaTeX parse them reliably.
+ */
+function normalizeLatexDelimiters(text: string): string {
+  if (!text) return '';
+  // 1. Convert \[ ... \] display math to $$ ... $$
+  let res = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => `\n$$\n${math.trim()}\n$$\n`);
+  // 2. Convert \( ... \) inline math to $ ... $
+  res = res.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => `$${math.trim()}$`);
+  // 3. Convert standalone bracketed equations containing LaTeX commands [ T = \prod ... ] to $$ ... $$
+  res = res.replace(/(^|\n)\[\s*([\s\S]*?(\\prod|\\sum|\\begin\{|\\frac|\\underbrace|\\int|\\theta|\\alpha|\\beta|\\partial)[\s\S]*?)\s*\](?:\n|$)/g, '$1\n$$\n$2\n$$\n');
+  return res;
+}
+
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
+  const processedContent = useMemo(() => normalizeLatexDelimiters(content), [content]);
+
   return (
     <div className="markdown-content text-xs lg:text-sm leading-relaxed space-y-2.5 font-sans text-blueprint-primary">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
         components={{
           // Bold formatting
           strong: ({ children }) => (
@@ -115,7 +135,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
           }
         }}
       >
-        {content}
+        {processedContent}
       </ReactMarkdown>
     </div>
   );
