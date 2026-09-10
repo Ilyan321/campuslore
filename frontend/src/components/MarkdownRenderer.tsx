@@ -87,16 +87,16 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
               {children}
             </blockquote>
           ),
-          // Tables
+          // Tables (Horizontally scrollable on mobile to prevent squishing)
           table: ({ children }) => (
-            <div className="overflow-x-auto my-3 border border-blueprint-border rounded">
-              <table className="min-w-full divide-y divide-blueprint-border text-left font-mono text-[11px]">
+            <div className="overflow-x-auto my-3 border border-blueprint-border rounded w-full max-w-full bg-blueprint-canvas">
+              <table className="min-w-[460px] w-full divide-y divide-blueprint-border text-left font-mono text-[11px]">
                 {children}
               </table>
             </div>
           ),
           thead: ({ children }) => (
-            <thead className="bg-blueprint-raised text-blueprint-secondary uppercase tracking-wider">
+            <thead className="bg-blueprint-raised text-blueprint-secondary uppercase tracking-wider font-semibold">
               {children}
             </thead>
           ),
@@ -109,10 +109,10 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
             <tr className="hover:bg-blueprint-raised/50 transition">{children}</tr>
           ),
           th: ({ children }) => (
-            <th className="px-3 py-2 font-medium">{children}</th>
+            <th className="px-3.5 py-2.5 font-medium whitespace-nowrap text-blueprint-primary">{children}</th>
           ),
           td: ({ children }) => (
-            <td className="px-3 py-2 text-blueprint-primary">{children}</td>
+            <td className="px-3.5 py-2.5 text-blueprint-primary align-top leading-relaxed">{children}</td>
           ),
           // Code rendering
           code: ({ node, inline, className, children, ...props }: any) => {
