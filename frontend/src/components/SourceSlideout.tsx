@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NoteSource } from '../types';
-import { X, FileText, ExternalLink, BookmarkCheck, Check } from 'lucide-react';
+import { X, FileText, ExternalLink, BookmarkCheck, Check, Code, BookOpen, Copy, Loader2 } from 'lucide-react';
+import { fetchFullNoteContent, getRawNoteUrl, FullNoteResponse } from '../services/api';
+import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface SourceSlideoutProps {
   isOpen: boolean;
@@ -17,12 +19,39 @@ export const SourceSlideout: React.FC<SourceSlideoutProps> = ({
   activeSourceIndex,
   onSelectSourceIndex
 }) => {
+  const [viewMode, setViewMode] = useState<'excerpt' | 'full'>('excerpt');
+  const [fullNote, setFullNote] = useState<FullNoteResponse | null>(null);
+  const [loadingFull, setLoadingFull] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   if (!isOpen || sources.length === 0) return null;
 
   const currentSource = sources[activeSourceIndex] || sources[0];
 
+  useEffect(() => {
+    if (viewMode === 'full' && currentSource.file_name) {
+      setLoadingFull(true);
+      fetchFullNoteContent(currentSource.file_name)
+        .then((data) => {
+          setFullNote(data);
+          setLoadingFull(false);
+        })
+        .catch(() => {
+          setLoadingFull(false);
+        });
+    }
+  }, [viewMode, currentSource.file_name]);
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const rawUrl = getRawNoteUrl(currentSource.file_name);
+
   return (
-    <div className="fixed inset-y-0 right-0 z-40 w-full sm:w-[500px] blueprint-panel border-l border-blueprint-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+    <div className="fixed inset-y-0 right-0 z-40 w-full sm:w-[580px] blueprint-panel border-l border-blueprint-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
       
       {/* Header */}
       <div className="px-5 py-3.5 border-b border-blueprint-border bg-blueprint-surface flex items-center justify-between">
@@ -42,7 +71,7 @@ export const SourceSlideout: React.FC<SourceSlideoutProps> = ({
       </div>
 
       {/* Source Tab Selector */}
-      <div className="px-5 py-2.5 border-b border-blueprint-border bg-blueprint-surface/50 flex items-center gap-2 overflow-x-auto">
+      <div className="px-5 py-2 border-b border-blueprint-border bg-blueprint-surface/50 flex items-center gap-2 overflow-x-auto">
         {sources.map((src, idx) => (
           <button
             key={idx}
@@ -68,23 +97,21 @@ export const SourceSlideout: React.FC<SourceSlideoutProps> = ({
       <div className="flex-1 p-5 overflow-y-auto space-y-4">
         
         {/* Source File Meta */}
-        <div className="p-3.5 rounded border border-blueprint-border bg-blueprint-surface space-y-1.5 font-mono">
-          <div className="flex items-center justify-between">
+        <div className="p-3.5 rounded border border-blueprint-border bg-blueprint-surface space-y-2 font-mono">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <span className="text-xs font-semibold text-blueprint-primary flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-blueprint-brass" />
-              {currentSource.file_name}
+              <FileText className="w-3.5 h-3.5 text-blueprint-brass flex-shrink-0" />
+              <span className="truncate max-w-[280px]">{currentSource.file_name}</span>
             </span>
-            {currentSource.file_url && (
-              <a
-                href={currentSource.file_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[11px] text-blueprint-brass hover:underline flex items-center gap-1"
-              >
-                <span>Raw File</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
+            <a
+              href={rawUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[11px] text-blueprint-brass hover:underline flex items-center gap-1 px-2 py-0.5 rounded bg-blueprint-raised border border-blueprint-border"
+            >
+              <span>Raw File</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
           
           <div className="flex items-center gap-2 text-[11px] text-blueprint-muted">
@@ -95,15 +122,76 @@ export const SourceSlideout: React.FC<SourceSlideoutProps> = ({
           </div>
         </div>
 
-        {/* Note Chunk Text */}
-        <div>
-          <label className="text-[11px] font-mono uppercase tracking-wider text-blueprint-muted block mb-1.5">
-            Indexed Note Excerpt
-          </label>
-          <div className="p-3.5 rounded border border-blueprint-border bg-blueprint-canvas text-blueprint-primary text-xs font-mono whitespace-pre-wrap leading-relaxed">
-            {currentSource.content}
+        {/* View Mode Switcher: Excerpt vs Full Document */}
+        <div className="flex items-center justify-between border-b border-blueprint-border pb-2">
+          <div className="flex items-center gap-1 bg-blueprint-raised p-0.5 rounded border border-blueprint-border">
+            <button
+              onClick={() => setViewMode('excerpt')}
+              className={`px-2.5 py-1 rounded text-xs font-mono transition flex items-center gap-1.5 ${
+                viewMode === 'excerpt'
+                  ? 'bg-blueprint-surface text-blueprint-primary font-medium shadow-sm'
+                  : 'text-blueprint-muted hover:text-blueprint-primary'
+              }`}
+            >
+              <BookOpen className="w-3 h-3" />
+              <span>Matching Excerpt</span>
+            </button>
+            <button
+              onClick={() => setViewMode('full')}
+              className={`px-2.5 py-1 rounded text-xs font-mono transition flex items-center gap-1.5 ${
+                viewMode === 'full'
+                  ? 'bg-blueprint-surface text-blueprint-primary font-medium shadow-sm'
+                  : 'text-blueprint-muted hover:text-blueprint-primary'
+              }`}
+            >
+              <Code className="w-3 h-3" />
+              <span>Full Document / Code</span>
+            </button>
           </div>
+
+          <button
+            onClick={() => handleCopy(viewMode === 'full' && fullNote ? fullNote.content : currentSource.content)}
+            className="text-[11px] font-mono text-blueprint-muted hover:text-blueprint-primary flex items-center gap-1 px-2 py-1 rounded hover:bg-blueprint-raised transition"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3 h-3 text-blueprint-emerald" />
+                <span className="text-blueprint-emerald">Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3 h-3" />
+                <span>Copy</span>
+              </>
+            )}
+          </button>
         </div>
+
+        {/* Note Content Display */}
+        {viewMode === 'excerpt' ? (
+          <div>
+            <div className="p-3.5 rounded border border-blueprint-border bg-blueprint-canvas text-blueprint-primary text-xs font-mono whitespace-pre-wrap leading-relaxed max-h-[380px] overflow-y-auto">
+              {currentSource.content}
+            </div>
+          </div>
+        ) : (
+          <div>
+            {loadingFull ? (
+              <div className="p-10 flex flex-col items-center justify-center gap-2 text-blueprint-muted font-mono text-xs">
+                <Loader2 className="w-5 h-5 animate-spin text-blueprint-brass" />
+                <span>Loading complete document...</span>
+              </div>
+            ) : fullNote ? (
+              <div className="p-3.5 rounded border border-blueprint-border bg-blueprint-canvas text-blueprint-primary text-xs font-mono whitespace-pre-wrap leading-relaxed max-h-[460px] overflow-y-auto">
+                <MarkdownRenderer content={fullNote.content} />
+              </div>
+            ) : (
+              <div className="p-3.5 rounded border border-blueprint-border bg-blueprint-canvas text-blueprint-primary text-xs font-mono whitespace-pre-wrap leading-relaxed max-h-[380px] overflow-y-auto">
+                {currentSource.content}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Verification guarantee */}
         <div className="p-3 rounded border border-blueprint-border bg-blueprint-surface text-[11px] font-mono text-blueprint-secondary flex items-start gap-2">

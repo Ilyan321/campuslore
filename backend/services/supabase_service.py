@@ -129,3 +129,44 @@ def search_notes_lexical(
         logger.error(f"Error performing lexical search: {e}")
         return []
 
+def get_full_note_by_filename(file_name: str) -> Optional[Dict[str, Any]]:
+    """
+    Retrieves full note document by matching file_name, either from SEED_NOTES or by stitching chunks from Supabase.
+    """
+    try:
+        from services.seed_service import SEED_NOTES
+        for note in SEED_NOTES:
+            if note.get("file_name") == file_name:
+                return {
+                    "file_name": note["file_name"],
+                    "topic": note.get("topic", "General"),
+                    "course_id": note.get("course_id", "General"),
+                    "week_number": note.get("week_number"),
+                    "content": note.get("content", ""),
+                    "is_seed": True
+                }
+    except Exception as e:
+        logger.error(f"Error checking seed notes: {e}")
+
+    client = get_supabase_client()
+    if not client:
+        return None
+    try:
+        response = client.table("notes").select("file_name, topic, course_id, week_number, content, chunk_index").eq("file_name", file_name).order("chunk_index").execute()
+        if not response.data:
+            return None
+        chunks = response.data
+        first = chunks[0]
+        stitched_content = "\n\n".join([c.get("content", "") for c in chunks if c.get("content")])
+        return {
+            "file_name": first.get("file_name"),
+            "topic": first.get("topic", "General"),
+            "course_id": first.get("course_id", "General"),
+            "week_number": first.get("week_number"),
+            "content": stitched_content,
+            "is_seed": False
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving full note for {file_name}: {e}")
+        return None
+

@@ -224,3 +224,29 @@ export async function fetchWeekNotes(courseId: string, weekNumber: number): Prom
   }
 }
 
+export interface FullNoteResponse {
+  file_name: string;
+  topic?: string;
+  course_id?: string;
+  week_number?: number;
+  content: string;
+  is_seed?: boolean;
+}
+
+export async function fetchFullNoteContent(fileName: string): Promise<FullNoteResponse | null> {
+  try {
+    const res = await fetchWithRetry(`${API_BASE_URL}/api/notes/content?file_name=${encodeURIComponent(fileName)}`, {
+      method: 'GET'
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error('Error fetching full note content:', err);
+    return null;
+  }
+}
+
+export function getRawNoteUrl(fileName: string): string {
+  return `${API_BASE_URL}/api/notes/raw/${encodeURIComponent(fileName)}`;
+}
+

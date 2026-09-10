@@ -2,7 +2,7 @@ import logging
 from typing import Optional, List
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, PlainTextResponse
 from pydantic import BaseModel
 
 from config import SUPABASE_URL, GROQ_API_KEY
@@ -211,3 +211,26 @@ def get_notes_for_week(
     except Exception as e:
         logger.error(f"Error fetching notes: {e}")
         return []
+
+@app.get("/api/notes/content")
+def get_note_full_content(file_name: str = Query(...)):
+    """
+    Returns the complete text content and metadata for a note file.
+    Reconstructs from seed repository or database chunk records.
+    """
+    from services.supabase_service import get_full_note_by_filename
+    note = get_full_note_by_filename(file_name)
+    if not note:
+        raise HTTPException(status_code=404, detail=f"Note file '{file_name}' not found.")
+    return note
+
+@app.get("/api/notes/raw/{file_name}")
+def get_note_raw_file(file_name: str):
+    """
+    Returns the raw plain text file content for direct viewing or downloading.
+    """
+    from services.supabase_service import get_full_note_by_filename
+    note = get_full_note_by_filename(file_name)
+    if not note:
+        raise HTTPException(status_code=404, detail=f"Note file '{file_name}' not found.")
+    return PlainTextResponse(content=note.get("content", ""), media_type="text/plain; charset=utf-8")
