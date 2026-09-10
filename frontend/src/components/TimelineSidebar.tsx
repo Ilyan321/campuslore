@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Course, SyllabusWeek } from '../types';
-import { ChevronRight, ChevronDown, BookOpen, Search, X, Sparkles, Filter } from 'lucide-react';
+import { ChevronRight, ChevronDown, BookOpen, Search, X, Sparkles, Filter, Layers } from 'lucide-react';
 
 interface TimelineSidebarProps {
   courses: Course[];
@@ -8,6 +8,8 @@ interface TimelineSidebarProps {
   selectedWeek: number | null;
   onSelectTopic: (courseId: string | null, week: number | null) => void;
   isLoading?: boolean;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
@@ -15,7 +17,9 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
   selectedCourseId,
   selectedWeek,
   onSelectTopic,
-  isLoading = false
+  isLoading = false,
+  isMobileOpen = false,
+  onCloseMobile
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedCourses, setExpandedCourses] = useState<Record<string, boolean>>({
@@ -67,19 +71,36 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
     return filteredCourses.reduce((acc, c) => acc + c.syllabus_timeline.length, 0);
   }, [filteredCourses]);
 
-  return (
-    <aside className="w-full lg:w-80 flex-shrink-0 flex flex-col blueprint-panel rounded h-[calc(100vh-5.5rem)] overflow-hidden">
-      
+  const handleItemSelect = (courseId: string | null, week: number | null) => {
+    onSelectTopic(courseId, week);
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
+  const sidebarContent = (
+    <div className="flex flex-col h-full bg-blueprint-panel">
       {/* Sidebar Header */}
-      <div className="p-3 border-b border-blueprint-border bg-blueprint-surface">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-blueprint-secondary flex items-center gap-1.5">
-            <BookOpen className="w-3.5 h-3.5 text-blueprint-brass" />
+      <div className="p-3 border-b border-blueprint-border bg-blueprint-surface flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <BookOpen className="w-3.5 h-3.5 text-blueprint-brass" />
+          <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-blueprint-secondary">
             Curriculum Index
           </span>
+        </div>
+        <div className="flex items-center gap-1.5">
           <span className="font-mono text-[10px] text-blueprint-muted bg-blueprint-raised px-1.5 py-0.5 rounded border border-blueprint-border">
             {courses.length} Courses · {totalWeeks} Wks
           </span>
+          {onCloseMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="lg:hidden p-1 rounded text-blueprint-muted hover:text-blueprint-primary hover:bg-blueprint-raised"
+              aria-label="Close syllabus menu"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -115,7 +136,7 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
       {!searchQuery && (
         <div className="p-2 border-b border-blueprint-border bg-blueprint-surface/40">
           <button
-            onClick={() => onSelectTopic(null, null)}
+            onClick={() => handleItemSelect(null, null)}
             className={`w-full text-left p-2.5 rounded transition flex items-center justify-between border ${
               selectedCourseId === null && selectedWeek === null
                 ? 'bg-blueprint-raised border-l-2 border-l-blueprint-brass border-blueprint-borderLight text-blueprint-primary shadow-sm'
@@ -186,7 +207,7 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
                       return (
                         <button
                           key={item.week}
-                          onClick={() => onSelectTopic(course.course_id, item.week)}
+                          onClick={() => handleItemSelect(course.course_id, item.week)}
                           className={`w-full text-left p-2 rounded transition flex flex-col gap-0.5 border ${
                             isSelected
                               ? 'bg-blueprint-raised border-l-2 border-l-blueprint-brass border-blueprint-borderLight text-blueprint-primary font-medium'
@@ -223,7 +244,32 @@ export const TimelineSidebar: React.FC<TimelineSidebarProps> = ({
           })
         )}
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Persistent Sidebar (>= 1024px) */}
+      <aside className="hidden lg:flex w-80 flex-shrink-0 flex-col blueprint-panel rounded h-[calc(100vh-5.5rem)] overflow-hidden">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Slide-Over Drawer (< 1024px) */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop overlay */}
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+            onClick={onCloseMobile}
+          />
+          {/* Slide-over Drawer Panel */}
+          <div className="relative w-full max-w-xs sm:max-w-sm h-full shadow-2xl border-r border-blueprint-border z-10 animate-in slide-in-from-left duration-200">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 };
+
 

@@ -27,6 +27,7 @@ export function App() {
   const [activeSourceIndex, setActiveSourceIndex] = useState<number>(0);
   const [isSlideoutOpen, setIsSlideoutOpen] = useState<boolean>(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
+  const [isMobileSyllabusOpen, setIsMobileSyllabusOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Chat Session Management
@@ -181,6 +182,7 @@ export function App() {
       <Header
         onOpenUpload={() => setIsUploadOpen(true)}
         onOpenHistory={() => setIsHistoryOpen(true)}
+        onOpenSyllabus={() => setIsMobileSyllabusOpen(true)}
         onNewChat={handleNewChat}
         sessionCount={sessions.length}
       />
@@ -209,7 +211,7 @@ export function App() {
       )}
 
       {/* Main App Workspace */}
-      <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 lg:p-4 flex flex-col lg:flex-row gap-3 relative">
+      <main className="flex-1 max-w-[1600px] w-full mx-auto p-2 sm:p-3 lg:p-4 flex flex-col lg:flex-row gap-3 relative">
         
         {/* Left: Universal Syllabus Timeline Navigation with Search */}
         <TimelineSidebar
@@ -217,6 +219,8 @@ export function App() {
           selectedCourseId={selectedCourseId}
           selectedWeek={selectedWeek}
           onSelectTopic={handleSelectTopic}
+          isMobileOpen={isMobileSyllabusOpen}
+          onCloseMobile={() => setIsMobileSyllabusOpen(false)}
         />
 
         {/* Center: Universal Contextual Chat Interface */}
