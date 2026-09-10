@@ -49,6 +49,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Keyboard accessibility: Close on Escape key press
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && !isSaving) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isSaving, onClose]);
+
   if (!isOpen) return null;
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -75,6 +86,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   };
 
   const processSelectedFile = async (selectedFile: File) => {
+    // 25MB safety boundary check
+    if (selectedFile.size > 25 * 1024 * 1024) {
+      setError('File exceeds maximum upload limit of 25MB.');
+      return;
+    }
+    
     setFile(selectedFile);
     setError(null);
     setSuccessMessage(null);

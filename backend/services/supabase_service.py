@@ -93,24 +93,27 @@ def search_notes_lexical(
     limit: int = 5
 ) -> List[Dict[str, Any]]:
     """
-    Performs keyword/full-text matching query against 'notes' content for hybrid retrieval.
+    Performs keyword matching query against 'notes' content for hybrid retrieval.
+    Builds a fresh query per keyword to avoid chaining AND parameters.
     """
     client = get_supabase_client()
     if not client or not keywords:
         return []
     try:
-        query_builder = client.table("notes").select("id, content, file_url, file_name, week_number, course_id, topic")
-        if filter_week is not None:
-            query_builder = query_builder.eq("week_number", filter_week)
-        if filter_course is not None and filter_course != "UNIVERSAL":
-            query_builder = query_builder.eq("course_id", filter_course)
-        
         results = []
         for kw in keywords[:3]:
-            clean_kw = kw.strip()
+            # Sanitize PostgreSQL LIKE wildcards
+            clean_kw = kw.strip().replace("%", "").replace("_", "")
             if len(clean_kw) < 2:
                 continue
-            res = query_builder.ilike("content", f"%{clean_kw}%").limit(limit).execute()
+            
+            query = client.table("notes").select("id, content, file_url, file_name, week_number, course_id, topic")
+            if filter_week is not None and filter_week > 0:
+                query = query.eq("week_number", filter_week)
+            if filter_course is not None and filter_course != "UNIVERSAL":
+                query = query.eq("course_id", filter_course)
+            
+            res = query.ilike("content", f"%{clean_kw}%").limit(limit).execute()
             if res.data:
                 results.extend(res.data)
         

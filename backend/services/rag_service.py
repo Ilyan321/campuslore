@@ -11,6 +11,19 @@ logger = logging.getLogger("campuslore.rag")
 # In-memory query cache for rate-limit protection & instantaneous repeat responses
 _query_cache: Dict[str, Dict[str, Any]] = {}
 CACHE_TTL_SECONDS = 3600
+MAX_CACHE_ENTRIES = 200
+
+def _prune_cache_if_needed():
+    """Prunes expired entries or limits cache size to prevent memory leakage."""
+    now = time.time()
+    if len(_query_cache) > MAX_CACHE_ENTRIES:
+        expired = [k for k, v in _query_cache.items() if now - v.get("timestamp", 0) > CACHE_TTL_SECONDS]
+        for k in expired:
+            _query_cache.pop(k, None)
+        if len(_query_cache) > MAX_CACHE_ENTRIES:
+            oldest = sorted(_query_cache.keys(), key=lambda k: _query_cache[k].get("timestamp", 0))[:50]
+            for k in oldest:
+                _query_cache.pop(k, None)
 
 def get_cache_key(query: str, week_number: int, course_id: Optional[str]) -> str:
     return f"{course_id or 'any'}_w{week_number}_{query.strip().lower()}"
@@ -117,7 +130,8 @@ def execute_rag_pipeline(
         "query": query
     }
 
-    # Store in cache
+    # Store in cache with size bounding
+    _prune_cache_if_needed()
     _query_cache[cache_key] = {"response": result, "timestamp": now}
     return result
 
