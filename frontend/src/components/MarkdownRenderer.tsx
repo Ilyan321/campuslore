@@ -13,10 +13,12 @@ interface MarkdownRendererProps {
  * Normalizes various LaTeX math delimiters (\[ ... \], \( ... \), and raw equation brackets)
  * into standard $$ ... $$ and $ ... $ so remark-math and KaTeX parse them reliably.
  */
-function normalizeLatexDelimiters(text: string): string {
+function normalizeMarkdownContent(text: string): string {
   if (!text) return '';
+  // Convert raw <br> or <br/> tags into markdown linebreaks
+  let res = text.replace(/<br\s*\/?>/gi, '\n\n');
   // 1. Convert \[ ... \] display math to $$ ... $$
-  let res = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => `\n$$\n${math.trim()}\n$$\n`);
+  res = res.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => `\n$$\n${math.trim()}\n$$\n`);
   // 2. Convert \( ... \) inline math to $ ... $
   res = res.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => `$${math.trim()}$`);
   // 3. Convert standalone bracketed equations containing LaTeX commands [ T = \prod ... ] to $$ ... $$
@@ -25,7 +27,7 @@ function normalizeLatexDelimiters(text: string): string {
 }
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
-  const processedContent = useMemo(() => normalizeLatexDelimiters(content), [content]);
+  const processedContent = useMemo(() => normalizeMarkdownContent(content), [content]);
 
   return (
     <div className="markdown-content text-xs lg:text-sm leading-relaxed space-y-2.5 font-sans text-blueprint-primary min-w-0 w-full overflow-hidden break-words [overflow-wrap:anywhere]">
@@ -87,10 +89,10 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
               {children}
             </blockquote>
           ),
-          // Tables (Horizontally scrollable on mobile to prevent squishing)
+          // Tables (Horizontally scrollable with balanced column widths)
           table: ({ children }) => (
-            <div className="overflow-x-auto my-3 border border-blueprint-border rounded w-full max-w-full bg-blueprint-canvas">
-              <table className="min-w-[460px] w-full divide-y divide-blueprint-border text-left font-mono text-[11px]">
+            <div className="overflow-x-auto my-3 border border-blueprint-border rounded-lg w-full max-w-full bg-blueprint-canvas shadow-inner">
+              <table className="min-w-[620px] w-full divide-y divide-blueprint-border text-left font-mono text-[11px] sm:text-xs">
                 {children}
               </table>
             </div>
@@ -109,10 +111,14 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
             <tr className="hover:bg-blueprint-raised/50 transition">{children}</tr>
           ),
           th: ({ children }) => (
-            <th className="px-3.5 py-2.5 font-medium whitespace-nowrap text-blueprint-primary">{children}</th>
+            <th className="px-4 py-2.5 font-semibold text-blueprint-primary border-b border-blueprint-border min-w-[140px] first:min-w-[150px] whitespace-normal">
+              {children}
+            </th>
           ),
           td: ({ children }) => (
-            <td className="px-3.5 py-2.5 text-blueprint-primary align-top leading-relaxed">{children}</td>
+            <td className="px-4 py-3 text-blueprint-primary align-top leading-relaxed min-w-[140px] first:min-w-[150px] break-words">
+              {children}
+            </td>
           ),
           // Code rendering
           code: ({ node, inline, className, children, ...props }: any) => {
