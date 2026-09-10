@@ -80,3 +80,44 @@ def search_similar_notes(
     except Exception as e:
         logger.error(f"Error performing match_notes RPC: {e}")
         return []
+
+def search_notes_lexical(
+    keywords: List[str],
+    filter_week: Optional[int] = None,
+    filter_course: Optional[str] = None,
+    limit: int = 5
+) -> List[Dict[str, Any]]:
+    """
+    Performs keyword/full-text matching query against 'notes' content for hybrid retrieval.
+    """
+    client = get_supabase_client()
+    if not client or not keywords:
+        return []
+    try:
+        query_builder = client.table("notes").select("id, content, file_url, file_name, week_number, course_id, topic")
+        if filter_week is not None:
+            query_builder = query_builder.eq("week_number", filter_week)
+        if filter_course is not None and filter_course != "UNIVERSAL":
+            query_builder = query_builder.eq("course_id", filter_course)
+        
+        results = []
+        for kw in keywords[:3]:
+            clean_kw = kw.strip()
+            if len(clean_kw) < 2:
+                continue
+            res = query_builder.ilike("content", f"%{clean_kw}%").limit(limit).execute()
+            if res.data:
+                results.extend(res.data)
+        
+        deduped = []
+        seen = set()
+        for r in results:
+            rid = r.get("id") or f"{r.get('file_name')}_{r.get('content')[:30]}"
+            if rid not in seen:
+                seen.add(rid)
+                deduped.append(r)
+        return deduped
+    except Exception as e:
+        logger.error(f"Error performing lexical search: {e}")
+        return []
+

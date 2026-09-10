@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Course, SyllabusWeek, ChatMessage, NoteSource, ChatSession } from '../types';
-import { queryRAG } from '../services/api';
+import { queryRAG, streamQueryRAG, QueryMeta } from '../services/api';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import {
   Send,
@@ -12,7 +12,8 @@ import {
   BookOpen,
   ArrowUpRight,
   Terminal,
-  Loader2
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 
 interface ChatInterfaceProps {
@@ -38,6 +39,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -55,11 +57,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, loading]);
+  }, [messages, loading, isStreaming]);
 
   const handleSend = async (queryText?: string) => {
     const textToSend = queryText || input;
-    if (!textToSend.trim() || loading || !activeSession) return;
+    if (!textToSend.trim() || loading || isStreaming || !activeSession) return;
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -74,36 +76,102 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       ? (textToSend.trim().length > 38 ? `${textToSend.trim().slice(0, 38)}...` : textToSend.trim())
       : undefined;
 
+    // Prepare multi-turn conversation memory (last 4 turns)
+    const historyPayload = newMessagesWithUser
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .slice(-4)
+      .map(m => ({ role: m.role, content: m.content }));
+
     onUpdateSessionMessages(activeSession.id, newMessagesWithUser, sessionTitle);
     if (!queryText) setInput('');
     setLoading(true);
     setRateLimitError(null);
 
+    const assistantMsgId = `ai-${Date.now()}`;
+    let accumulatedContent = '';
+    let streamMeta: QueryMeta = {};
+
     try {
-      const response = await queryRAG({
-        query: textToSend.trim(),
-        week_number: selectedWeek,
-        course_id: selectedCourseId || undefined
-      });
+      setIsStreaming(true);
+      
+      // Stream tokens via SSE endpoint (/api/query/stream)
+      await streamQueryRAG(
+        {
+          query: textToSend.trim(),
+          week_number: selectedWeek,
+          course_id: selectedCourseId || undefined,
+          history: historyPayload
+        },
+        // onToken callback
+        (token: string) => {
+          accumulatedContent += token;
+          setLoading(false); // Stop skeleton as soon as first token arrives
+          
+          const assistantMessage: ChatMessage = {
+            id: assistantMsgId,
+            role: 'assistant',
+            content: accumulatedContent,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            sources: streamMeta.sources || [],
+            auto_detected_week: streamMeta.auto_detected_week,
+            detected_topic: streamMeta.detected_topic,
+            language_mode: streamMeta.language_mode,
+            isStreaming: true
+          };
+          onUpdateSessionMessages(activeSession.id, [...newMessagesWithUser, assistantMessage]);
+        },
+        // onMeta callback
+        (meta: QueryMeta) => {
+          streamMeta = meta;
+        }
+      );
 
-      const assistantMessage: ChatMessage = {
-        id: `ai-${Date.now()}`,
+      // Finalize message once stream completes
+      const finalAssistantMessage: ChatMessage = {
+        id: assistantMsgId,
         role: 'assistant',
-        content: response.answer,
+        content: accumulatedContent,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        sources: response.sources,
-        auto_detected_week: response.agentic_meta?.auto_detected_week || response.week_number || undefined,
-        detected_topic: response.agentic_meta?.detected_topic,
-        language_mode: response.agentic_meta?.language_mode
+        sources: streamMeta.sources || [],
+        auto_detected_week: streamMeta.auto_detected_week,
+        detected_topic: streamMeta.detected_topic,
+        language_mode: streamMeta.language_mode,
+        isStreaming: false
       };
+      onUpdateSessionMessages(activeSession.id, [...newMessagesWithUser, finalAssistantMessage]);
 
-      const finalMessages = [...newMessagesWithUser, assistantMessage];
-      onUpdateSessionMessages(activeSession.id, finalMessages);
-    } catch (err: any) {
-      console.error('Chat error:', err);
-      setRateLimitError('Server rate limit or temporary latency hit. Please retry in a few seconds.');
+    } catch (streamErr: any) {
+      console.warn('Streaming error, falling back to sync RAG query:', streamErr);
+      
+      // Graceful fallback to standard /api/query POST
+      try {
+        const response = await queryRAG({
+          query: textToSend.trim(),
+          week_number: selectedWeek,
+          course_id: selectedCourseId || undefined,
+          history: historyPayload
+        });
+
+        const assistantMessage: ChatMessage = {
+          id: assistantMsgId,
+          role: 'assistant',
+          content: response.answer,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          sources: response.sources,
+          auto_detected_week: response.agentic_meta?.auto_detected_week || response.week_number || undefined,
+          detected_topic: response.agentic_meta?.detected_topic,
+          language_mode: response.agentic_meta?.language_mode,
+          isStreaming: false
+        };
+
+        onUpdateSessionMessages(activeSession.id, [...newMessagesWithUser, assistantMessage]);
+      } catch (err: any) {
+        console.error('Chat query error:', err);
+        setRateLimitError('Server rate limit or connection issue. Please retry in a moment.');
+      }
     } finally {
       setLoading(false);
+      setIsStreaming(false);
     }
   };
 
@@ -112,6 +180,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
+
 
   const samplePrompts = selectedWeek !== null ? [
     `Explain the core exam concept and implementation details for this topic`,

@@ -9,7 +9,10 @@ import {
   Loader2,
   ArrowRight,
   RotateCcw,
-  BookOpen
+  Tag,
+  BookOpen,
+  Calendar,
+  Layers
 } from 'lucide-react';
 
 interface UploadModalProps {
@@ -30,15 +33,21 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
-  const [selectedCourseId, setSelectedCourseId] = useState<string>(courses[0]?.course_id || 'CSE-212');
-  const [overrideWeek, setOverrideWeek] = useState<number>(1);
-  const [overrideTopic, setOverrideTopic] = useState<string>('');
+  
+  // Universal Tagging & Alignment States
+  const [topicTag, setTopicTag] = useState<string>('');
+  const [subjectName, setSubjectName] = useState<string>('Data Structures & Algorithms');
+  const [courseId, setCourseId] = useState<string>('CSE-212');
+  const [linkToSyllabus, setLinkToSyllabus] = useState<boolean>(false);
+  const [assignedWeek, setAssignedWeek] = useState<number | null>(null);
+  
+  // Ingestion Stages
   const [isSaving, setIsSaving] = useState(false);
+  const [saveStep, setSaveStep] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const activeCourse = courses.find((c) => c.course_id === selectedCourseId) || courses[0];
 
   if (!isOpen) return null;
 
@@ -70,19 +79,29 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setError(null);
     setSuccessMessage(null);
     setLoading(true);
-    setStatusMessage('Extracting text, handwriting, and analyzing curriculum alignment...');
+    setStatusMessage('Stage 1/2: Extracting text, code AST, and handwriting via OCR...');
 
     try {
-      const result = await analyzeFile(selectedFile, selectedCourseId);
+      const result = await analyzeFile(selectedFile);
       setAnalysis(result);
       
-      const detectedCourse = result.classification.course_id || selectedCourseId;
-      setSelectedCourseId(detectedCourse);
-      setOverrideWeek(result.classification.assigned_week || 1);
+      const detectedCourse = result.classification.course_id || 'CSE-212';
+      const detectedTopic = result.classification.topic || selectedFile.name.replace(/\.[^/.]+$/, '');
+      const detectedWeek = result.classification.assigned_week || null;
+
+      setCourseId(detectedCourse);
+      setTopicTag(detectedTopic);
       
-      const matchedCourse = courses.find(c => c.course_id === detectedCourse) || courses[0];
-      const matchedWeek = matchedCourse?.syllabus_timeline.find(w => w.week === (result.classification.assigned_week || 1));
-      setOverrideTopic(result.classification.topic || matchedWeek?.core_topic || 'General Academic Topic');
+      const matchedCourse = courses.find(c => c.course_id === detectedCourse);
+      setSubjectName(matchedCourse ? matchedCourse.course_name : detectedCourse);
+
+      if (detectedWeek && detectedWeek > 0) {
+        setLinkToSyllabus(true);
+        setAssignedWeek(detectedWeek);
+      } else {
+        setLinkToSyllabus(false);
+        setAssignedWeek(null);
+      }
     } catch (err: any) {
       const errMsg = err?.message === 'Failed to fetch' 
         ? 'Could not connect to backend server. The server might be waking up; please retry in a moment.' 
@@ -99,12 +118,20 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setError(null);
 
     try {
+      setSaveStep('Stage 1/3: AST & Boundary-Aware Chunking...');
+      await new Promise(r => setTimeout(r, 200));
+
+      setSaveStep('Stage 2/3: Generating 384-dim FastEmbed Embeddings...');
+      await new Promise(r => setTimeout(r, 200));
+
+      setSaveStep('Stage 3/3: Indexing Vector Chunks in Database...');
+      
       const resp = await confirmIngest({
         file_name: analysis.file_name,
         file_url: analysis.file_url,
-        course_id: selectedCourseId,
-        week_number: Number(overrideWeek),
-        topic: overrideTopic,
+        course_id: courseId || subjectName || 'General',
+        week_number: linkToSyllabus ? assignedWeek : null,
+        topic: topicTag || 'General Academic',
         content: analysis.extracted_text
       });
 
@@ -118,6 +145,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       setError(err.message || 'Failed to save notes.');
     } finally {
       setIsSaving(false);
+      setSaveStep('');
     }
   };
 
@@ -127,7 +155,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setError(null);
     setSuccessMessage(null);
     setLoading(false);
+    setIsSaving(false);
+    setSaveStep('');
+    setLinkToSyllabus(false);
+    setAssignedWeek(null);
   };
+
+  const activeCourse = courses.find((c) => c.course_id === courseId);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-150">
@@ -141,7 +175,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             </div>
             <div>
               <h3 className="font-semibold text-sm text-blueprint-primary">Upload Study Material</h3>
-              <p className="text-[11px] font-mono text-blueprint-muted">Autonomous OCR, parsing, and syllabus alignment</p>
+              <p className="text-[11px] font-mono text-blueprint-muted">Universal topic tagging, AST chunking, and FastEmbed vectors</p>
             </div>
           </div>
           <button
@@ -202,10 +236,10 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               </div>
               <div>
                 <p className="font-medium text-xs lg:text-sm text-blueprint-primary">
-                  Drag & drop lecture notes, PDF slides, or code files
+                  Drag & drop lecture notes, PDF slides, Python scripts, or code files
                 </p>
                 <p className="text-[11px] font-mono text-blueprint-muted mt-1.5">
-                  Supported formats: PDF, PNG, JPG (handwritten notes), PY, CPP, C, TXT
+                  Supported: PDF, Python (.py), C/C++ (.cpp), Markdown (.md), Images (.png/.jpg)
                 </p>
               </div>
               <button
@@ -217,7 +251,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             </div>
           )}
 
-          {/* Loading Animation */}
+          {/* Granular Loading Animation */}
           {loading && (
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-3 font-mono">
               <Loader2 className="w-7 h-7 text-blueprint-brass animate-spin" />
@@ -228,86 +262,104 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             </div>
           )}
 
-          {/* Classification Review & Alignment */}
-          {analysis && !loading && (
+          {/* Granular Ingestion Saving Progress */}
+          {isSaving && (
+            <div className="py-8 flex flex-col items-center justify-center text-center space-y-3 font-mono bg-blueprint-surface p-4 rounded border border-blueprint-border">
+              <Loader2 className="w-6 h-6 text-blueprint-brass animate-spin" />
+              <div>
+                <p className="text-xs text-blueprint-primary font-semibold">PROCESSING & INDEXING...</p>
+                <p className="text-[11px] text-blueprint-brass mt-1 font-mono">{saveStep}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Universal Tagging Review & Customization */}
+          {analysis && !loading && !isSaving && (
             <div className="space-y-3.5">
               <div className="p-3.5 rounded border border-blueprint-border bg-blueprint-surface space-y-3">
                 <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-blueprint-brass font-semibold">
-                    SYLLABUS ALIGNMENT
+                  <span className="text-blueprint-brass font-semibold flex items-center gap-1.5">
+                    <Tag className="w-3.5 h-3.5" />
+                    UNIVERSAL DOCUMENT TAGGING
                   </span>
                   <span className="text-blueprint-muted">
-                    Confidence: {Math.round(analysis.classification.confidence * 100)}%
+                    AI Match: {Math.round(analysis.classification.confidence * 100)}%
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   
-                  {/* Subject / Course Selector */}
+                  {/* Subject / Course Input */}
                   <div>
                     <label className="text-[11px] font-mono text-blueprint-muted mb-1 block">
-                      Subject / Course
+                      Subject / Course Tag
                     </label>
-                    <select
-                      value={selectedCourseId}
+                    <input
+                      type="text"
+                      value={subjectName}
                       onChange={(e) => {
-                        const newCourseId = e.target.value;
-                        setSelectedCourseId(newCourseId);
-                        const c = courses.find(course => course.course_id === newCourseId);
-                        if (c && c.syllabus_timeline.length > 0) {
-                          setOverrideWeek(c.syllabus_timeline[0].week);
-                          setOverrideTopic(c.syllabus_timeline[0].core_topic);
+                        setSubjectName(e.target.value);
+                        setCourseId(e.target.value);
+                      }}
+                      placeholder="e.g. Python, Machine Learning, CSE-212"
+                      className="w-full bg-blueprint-raised border border-blueprint-border text-blueprint-primary text-xs py-1.5 px-2.5 rounded focus:border-blueprint-brass outline-none font-sans"
+                    />
+                  </div>
+
+                  {/* Free-form Topic Title */}
+                  <div>
+                    <label className="text-[11px] font-mono text-blueprint-muted mb-1 block">
+                      Topic / Concept Title
+                    </label>
+                    <input
+                      type="text"
+                      value={topicTag}
+                      onChange={(e) => setTopicTag(e.target.value)}
+                      placeholder="e.g. Circular Queue Implementation, FastAPI Setup"
+                      className="w-full bg-blueprint-raised border border-blueprint-border text-blueprint-primary text-xs py-1.5 px-2.5 rounded focus:border-blueprint-brass outline-none font-sans"
+                    />
+                  </div>
+
+                </div>
+
+                {/* Optional Syllabus Week Alignment Toggle */}
+                <div className="pt-2 border-t border-blueprint-border/60">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-mono text-blueprint-primary">
+                    <input
+                      type="checkbox"
+                      checked={linkToSyllabus}
+                      onChange={(e) => {
+                        setLinkToSyllabus(e.target.checked);
+                        if (e.target.checked && !assignedWeek) {
+                          setAssignedWeek(1);
                         }
                       }}
-                      className="w-full bg-blueprint-raised border border-blueprint-border text-blueprint-primary text-xs font-mono py-1.5 px-2.5 rounded focus:border-blueprint-brass outline-none"
-                    >
-                      {courses.map((c) => (
-                        <option key={c.course_id} value={c.course_id}>
-                          {c.course_name} ({c.course_id})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Assigned Week */}
-                  <div>
-                    <label className="text-[11px] font-mono text-blueprint-muted mb-1 block">
-                      Target Syllabus Week
-                    </label>
-                    <select
-                      value={overrideWeek}
-                      onChange={(e) => {
-                        const wk = Number(e.target.value);
-                        setOverrideWeek(wk);
-                        const matched = activeCourse?.syllabus_timeline.find((t) => t.week === wk);
-                        if (matched) setOverrideTopic(matched.core_topic);
-                      }}
-                      className="w-full bg-blueprint-raised border border-blueprint-border text-blueprint-primary text-xs font-mono py-1.5 px-2.5 rounded focus:border-blueprint-brass outline-none"
-                    >
-                      {activeCourse?.syllabus_timeline.map((w) => (
-                        <option key={w.week} value={w.week}>
-                          Week {w.week}: {w.core_topic}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                </div>
-
-                {/* Topic Label */}
-                <div>
-                  <label className="text-[11px] font-mono text-blueprint-muted mb-1 block">
-                    Topic Title
+                      className="rounded border-blueprint-border text-blueprint-brass focus:ring-0"
+                    />
+                    <span>Align with specific university syllabus week (Optional)</span>
                   </label>
-                  <input
-                    type="text"
-                    value={overrideTopic}
-                    onChange={(e) => setOverrideTopic(e.target.value)}
-                    className="w-full bg-blueprint-raised border border-blueprint-border text-blueprint-primary text-xs py-1.5 px-2.5 rounded focus:border-blueprint-brass outline-none font-sans"
-                  />
+
+                  {linkToSyllabus && (
+                    <div className="mt-2 pl-5">
+                      <label className="text-[11px] font-mono text-blueprint-muted mb-1 block">
+                        Target Syllabus Week (1–16)
+                      </label>
+                      <select
+                        value={assignedWeek || 1}
+                        onChange={(e) => setAssignedWeek(Number(e.target.value))}
+                        className="w-full sm:w-64 bg-blueprint-raised border border-blueprint-border text-blueprint-primary text-xs font-mono py-1.5 px-2.5 rounded focus:border-blueprint-brass outline-none"
+                      >
+                        {Array.from({ length: 16 }, (_, i) => i + 1).map((wk) => (
+                          <option key={wk} value={wk}>
+                            Week {wk} {activeCourse?.syllabus_timeline.find(t => t.week === wk)?.core_topic ? `(${activeCourse.syllabus_timeline.find(t => t.week === wk)?.core_topic})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
-                {/* Reasoning Note */}
+                {/* AI Reasoning Insight */}
                 <p className="text-[11px] font-mono text-blueprint-secondary bg-blueprint-raised p-2 rounded border border-blueprint-border">
                   Classification insight: {analysis.classification.reasoning}
                 </p>
@@ -374,5 +426,6 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     </div>
   );
 };
+
 
 

@@ -132,3 +132,67 @@ def test_api_query_endpoint():
     assert "answer" in data
     assert data["week_number"] == 5
     assert "sources" in data
+
+# 6. AST CHUNKING, CONVERSATION MEMORY & STREAMING AUDIT
+def test_ast_code_chunking_preserves_functions():
+    code_text = """
+def calculate_modulo(rear, capacity):
+    # Keep function together
+    return (rear + 1) % capacity
+
+class CircularQueue:
+    def __init__(self, size):
+        self.size = size
+        self.queue = [None] * size
+        self.front = -1
+        self.rear = -1
+
+    def enqueue(self, item):
+        if (self.rear + 1) % self.size == self.front:
+            return False
+        self.rear = (self.rear + 1) % self.size
+        self.queue[self.rear] = item
+        return True
+"""
+    chunks = semantic_chunk(code_text, max_chars=250, is_code=True)
+    assert len(chunks) >= 2
+    # Ensure function/class definitions are preserved at chunk start
+    assert any("def calculate_modulo" in c for c in chunks)
+    assert any("class CircularQueue" in c or "def enqueue" in c for c in chunks)
+
+def test_flexible_topic_confirm_ingest():
+    res = client.post("/api/ingest/confirm", json={
+        "file_name": "python_automation.py",
+        "course_id": "Python & Robotics",
+        "week_number": None,
+        "topic": "Autonomous Robot Navigation",
+        "content": "import time\n\ndef move_forward():\n    print('Moving forward')\n"
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert data["success"] is True
+    assert "Autonomous Robot Navigation" in data["message"]
+
+def test_multi_turn_history_in_query():
+    res = client.post("/api/query", json={
+        "query": "Can you provide the C++ implementation for that?",
+        "history": [
+            {"role": "user", "content": "Explain circular queue in C++"},
+            {"role": "assistant", "content": "A circular queue connects the last position back to the first using modulo arithmetic."}
+        ]
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert "answer" in data
+    assert len(data["answer"]) > 20
+
+def test_sse_streaming_endpoint():
+    res = client.post("/api/query/stream", json={
+        "query": "What is the time complexity of binary search?",
+        "course_id": "CSE-212"
+    })
+    assert res.status_code == 200
+    assert "text/event-stream" in res.headers["content-type"]
+    body = res.text
+    assert "data:" in body
+

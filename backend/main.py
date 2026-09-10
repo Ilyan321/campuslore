@@ -35,17 +35,18 @@ app.add_middleware(
 class ConfirmIngestRequest(BaseModel):
     file_name: str
     file_url: Optional[str] = None
-    course_id: str
-    week_number: int
-    topic: str
+    course_id: Optional[str] = "General"
+    week_number: Optional[int] = None
+    topic: Optional[str] = "General Academic"
     content: str
 
 class QueryRequest(BaseModel):
     query: str
     week_number: Optional[int] = None
-    course_id: Optional[str] = "CSE-212"
+    course_id: Optional[str] = None
     match_threshold: Optional[float] = 0.25
     match_count: Optional[int] = 4
+    history: Optional[List[dict]] = None
 
 @app.get("/")
 def root():
@@ -103,19 +104,23 @@ async def analyze_document(
 @app.post("/api/ingest/confirm")
 def confirm_ingestion(payload: ConfirmIngestRequest):
     """
-    Step 2 of Workflow A: Senior confirms or overrides the AI-assigned week.
-    Chunks text, computes 384-dim embeddings via BGE-small, and stores into Supabase pgvector.
+    Step 2 of Workflow A: Senior confirms or customizes the topic and optional syllabus week.
+    Chunks text using AST/recursive chunking, computes 384-dim embeddings via FastEmbed, and stores into Supabase pgvector.
     """
     try:
-        # 1. Semantic Chunking
-        chunks = semantic_chunk(payload.content, max_chars=500, overlap=100)
+        # 1. AST / Boundary-Aware Semantic Chunking
+        chunks = semantic_chunk(payload.content, max_chars=600, overlap=120)
         if not chunks:
             raise HTTPException(status_code=400, detail="Document content was empty.")
 
-        # 2. Batch Embedding Generation
+        # 2. Batch FastEmbed ONNX Generation
         embeddings = get_embeddings_batch(chunks)
 
-        # 3. Prepare database records
+        # 3. Prepare database records (Safely handling optional week_number as 0 if None)
+        effective_week = payload.week_number if payload.week_number is not None else 0
+        effective_course = payload.course_id or "General"
+        effective_topic = payload.topic or "General Academic"
+
         records = []
         for idx, (chunk_text, emb) in enumerate(zip(chunks, embeddings)):
             records.append({
@@ -123,9 +128,9 @@ def confirm_ingestion(payload: ConfirmIngestRequest):
                 "embedding": emb,
                 "file_url": payload.file_url,
                 "file_name": payload.file_name,
-                "course_id": payload.course_id,
-                "week_number": payload.week_number,
-                "topic": payload.topic,
+                "course_id": effective_course,
+                "week_number": effective_week,
+                "topic": effective_topic,
                 "chunk_index": idx,
                 "metadata": {
                     "total_chunks": len(chunks),
@@ -135,9 +140,10 @@ def confirm_ingestion(payload: ConfirmIngestRequest):
 
         # 4. Insert into Supabase
         inserted = insert_note_chunks(records)
+        week_label = f"Week {effective_week}" if effective_week > 0 else "General Tag"
         return {
             "success": True,
-            "message": f"Successfully indexed {len(records)} note chunks for Week {payload.week_number} ({payload.topic})",
+            "message": f"Successfully indexed {len(records)} note chunks for {effective_course} ({effective_topic} - {week_label})",
             "inserted_count": len(inserted) if inserted else len(records)
         }
     except Exception as e:
@@ -154,7 +160,8 @@ def query_rag(payload: QueryRequest):
         result = run_agentic_rag(
             query=payload.query,
             week_number=payload.week_number,
-            course_id=payload.course_id
+            course_id=payload.course_id,
+            history=payload.history
         )
         return result
     except Exception as e:
@@ -167,9 +174,10 @@ async def query_rag_stream(payload: QueryRequest):
     Streaming query endpoint with Server-Sent Events (SSE) for real-time bilingual token rendering.
     """
     return StreamingResponse(
-        stream_agentic_rag(payload.query, payload.week_number, payload.course_id),
+        stream_agentic_rag(payload.query, payload.week_number, payload.course_id, history=payload.history),
         media_type="text/event-stream"
     )
+
 
 @app.get("/api/seed")
 @app.post("/api/seed")

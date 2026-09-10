@@ -30,10 +30,33 @@ export const DEFAULT_COURSES: Course[] = [
   }
 ];
 
+/**
+ * Exponential backoff retry utility for network robustness against Render free-tier cold starts.
+ */
+async function fetchWithRetry(url: string, options: RequestInit, retries = 3, delayMs = 1000): Promise<Response> {
+  let lastError: any = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || response.status < 500) {
+        return response;
+      }
+      throw new Error(`Server returned HTTP ${response.status}`);
+    } catch (err: any) {
+      lastError = err;
+      if (attempt < retries) {
+        const backoff = delayMs * Math.pow(2, attempt);
+        await new Promise((resolve) => setTimeout(resolve, backoff));
+      }
+    }
+  }
+  throw lastError || new Error(`Network request failed after ${retries} attempts.`);
+}
+
 export async function fetchSyllabus(): Promise<Course[]> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
     const res = await fetch(`${API_BASE_URL}/api/syllabus`, { signal: controller.signal });
     clearTimeout(timeoutId);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -44,15 +67,17 @@ export async function fetchSyllabus(): Promise<Course[]> {
   }
 }
 
-export async function analyzeFile(file: File, courseId: string): Promise<AnalysisResult> {
+export async function analyzeFile(file: File, courseId?: string): Promise<AnalysisResult> {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('course_id', courseId);
+  if (courseId) {
+    formData.append('course_id', courseId);
+  }
 
-  const res = await fetch(`${API_BASE_URL}/api/ingest/analyze`, {
+  const res = await fetchWithRetry(`${API_BASE_URL}/api/ingest/analyze`, {
     method: 'POST',
     body: formData
-  });
+  }, 2, 800);
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ detail: 'Failed to analyze note' }));
@@ -65,16 +90,16 @@ export async function analyzeFile(file: File, courseId: string): Promise<Analysi
 export async function confirmIngest(payload: {
   file_name: string;
   file_url?: string;
-  course_id: string;
-  week_number: number;
-  topic: string;
+  course_id?: string;
+  week_number?: number | null;
+  topic?: string;
   content: string;
 }): Promise<{ success: boolean; message: string; inserted_count: number }> {
-  const res = await fetch(`${API_BASE_URL}/api/ingest/confirm`, {
+  const res = await fetchWithRetry(`${API_BASE_URL}/api/ingest/confirm`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
-  });
+  }, 2, 1000);
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'Failed to confirm ingestion' }));
@@ -84,29 +109,33 @@ export async function confirmIngest(payload: {
   return await res.json();
 }
 
+export interface QueryMeta {
+  auto_detected_week?: number;
+  detected_topic?: string;
+  language_mode?: string;
+  sources?: NoteSource[];
+  expanded_queries?: string[];
+  relevance_grade?: string;
+  latency_seconds?: number;
+}
+
 export async function queryRAG(payload: {
   query: string;
   week_number?: number | null;
   course_id?: string | null;
+  history?: Array<{ role: string; content: string }>;
 }): Promise<{
   answer: string;
   week_number?: number | null;
   course_id?: string | null;
   sources: NoteSource[];
-  agentic_meta?: {
-    auto_detected_week?: number;
-    detected_topic?: string;
-    language_mode?: string;
-    expanded_queries?: string[];
-    relevance_grade?: string;
-    latency_seconds?: number;
-  };
+  agentic_meta?: QueryMeta;
 }> {
-  const res = await fetch(`${API_BASE_URL}/api/query`, {
+  const res = await fetchWithRetry(`${API_BASE_URL}/api/query`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
-  });
+  }, 2, 800);
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'Failed to query RAG' }));
@@ -114,6 +143,66 @@ export async function queryRAG(payload: {
   }
 
   return await res.json();
+}
+
+/**
+ * Real-time SSE Token Streaming query with live token-by-token rendering.
+ */
+export async function streamQueryRAG(
+  payload: {
+    query: string;
+    week_number?: number | null;
+    course_id?: string | null;
+    history?: Array<{ role: string; content: string }>;
+  },
+  onToken: (token: string) => void,
+  onMeta?: (meta: QueryMeta) => void,
+  onError?: (err: Error) => void
+): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/api/query/stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok || !res.body) {
+    throw new Error(`Streaming failed with status ${res.status}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let fullText = '';
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith('data: ')) continue;
+      const dataStr = trimmed.slice(6);
+      try {
+        const parsed = JSON.parse(dataStr);
+        if (parsed.type === 'token') {
+          fullText += parsed.content;
+          onToken(parsed.content);
+        } else if (parsed.type === 'meta' && onMeta) {
+          onMeta(parsed);
+        } else if (parsed.type === 'error' && onError) {
+          onError(new Error(parsed.content));
+        }
+      } catch (e) {
+        // Skip malformed SSE chunks
+      }
+    }
+  }
+
+  return fullText;
 }
 
 export async function triggerSeed(): Promise<{ success: boolean; message: string; seeded_topics: string[]; total_chunks: number }> {
@@ -134,3 +223,4 @@ export async function fetchWeekNotes(courseId: string, weekNumber: number): Prom
     return [];
   }
 }
+
