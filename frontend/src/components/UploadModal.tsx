@@ -12,14 +12,17 @@ import {
   Tag,
   BookOpen,
   Calendar,
-  Layers
+  Layers,
+  FileText,
+  Sparkles,
+  CheckCircle2
 } from 'lucide-react';
 
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   courses: Course[];
-  onUploadSuccess: () => void;
+  onUploadSuccess: (fileName: string) => void;
 }
 
 export const UploadModal: React.FC<UploadModalProps> = ({
@@ -61,6 +64,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   }, [isOpen, isSaving, onClose]);
 
   if (!isOpen) return null;
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -152,12 +161,14 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         content: analysis.extracted_text
       });
 
-      setSuccessMessage(resp.message || 'Notes successfully indexed into the knowledge base.');
+      const fileNameSaved = analysis.file_name || file.name;
+      setSuccessMessage(resp.message || `"${fileNameSaved}" successfully indexed into the knowledge base.`);
+      
       setTimeout(() => {
-        onUploadSuccess();
+        onUploadSuccess(fileNameSaved);
         handleReset();
         onClose();
-      }, 1400);
+      }, 1200);
     } catch (err: any) {
       setError(err.message || 'Failed to save notes.');
     } finally {
@@ -187,7 +198,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-blueprint-border bg-blueprint-surface">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded bg-blueprint-raised border border-blueprint-border flex items-center justify-center text-blueprint-brass flex-shrink-0">
+            <div className="w-8 h-8 rounded bg-blueprint-raised border border-blueprint-border flex items-center justify-center text-blueprint-brass flex-shrink-0 shadow-sm">
               <UploadCloud className="w-4 h-4 stroke-[2]" />
             </div>
             <div>
@@ -208,11 +219,11 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           
           {/* Success Banner */}
           {successMessage && (
-            <div className="p-3 rounded border border-blueprint-emerald/40 bg-blueprint-surface text-blueprint-emerald text-xs flex items-center gap-2.5 font-mono">
-              <Check className="w-4 h-4 stroke-[2.5]" />
+            <div className="p-4 rounded border border-blueprint-emerald/50 bg-blueprint-raised text-blueprint-emerald text-xs flex items-center gap-3 font-mono">
+              <CheckCircle2 className="w-5 h-5 stroke-[2.5] flex-shrink-0 text-blueprint-emerald" />
               <div>
-                <p className="font-bold">INDEXED SUCCESSFULLY</p>
-                <p className="text-blueprint-primary text-[11px]">{successMessage}</p>
+                <p className="font-bold text-blueprint-emerald">FILE UPLOADED & INDEXED</p>
+                <p className="text-blueprint-primary text-[11px] mt-0.5">{successMessage}</p>
               </div>
             </div>
           )}
@@ -261,7 +272,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               </div>
               <button
                 type="button"
-                className="mt-1 px-3 py-1.5 rounded bg-blueprint-raised hover:bg-blueprint-subtle text-blueprint-primary border border-blueprint-border font-mono text-xs transition"
+                className="mt-1 px-3.5 py-1.5 rounded bg-blueprint-raised hover:bg-blueprint-subtle text-blueprint-primary border border-blueprint-border font-mono text-xs transition active:scale-[0.98]"
               >
                 Select File
               </button>
@@ -271,10 +282,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           {/* Granular Loading Animation */}
           {loading && (
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-3 font-mono">
-              <Loader2 className="w-7 h-7 text-blueprint-brass animate-spin" />
+              <Loader2 className="w-8 h-8 text-blueprint-brass animate-spin" />
               <div>
                 <p className="text-xs text-blueprint-primary font-semibold">ANALYZING DOCUMENT...</p>
                 <p className="text-[11px] text-blueprint-muted mt-1">{statusMessage}</p>
+                {file && (
+                  <p className="text-[10px] text-blueprint-brass mt-1 font-mono">{file.name} ({formatFileSize(file.size)})</p>
+                )}
               </div>
             </div>
           )}
@@ -282,7 +296,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           {/* Granular Ingestion Saving Progress */}
           {isSaving && (
             <div className="py-8 flex flex-col items-center justify-center text-center space-y-3 font-mono bg-blueprint-surface p-4 rounded border border-blueprint-border">
-              <Loader2 className="w-6 h-6 text-blueprint-brass animate-spin" />
+              <Loader2 className="w-7 h-7 text-blueprint-brass animate-spin" />
               <div>
                 <p className="text-xs text-blueprint-primary font-semibold">PROCESSING & INDEXING...</p>
                 <p className="text-[11px] text-blueprint-brass mt-1 font-mono">{saveStep}</p>
@@ -293,6 +307,29 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           {/* Universal Tagging Review & Customization */}
           {analysis && !loading && !isSaving && (
             <div className="space-y-3.5">
+              
+              {/* Active Selected File Summary Badge */}
+              <div className="p-3 rounded border border-blueprint-emerald/40 bg-blueprint-surface flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 truncate">
+                  <div className="w-7 h-7 rounded bg-blueprint-raised border border-blueprint-border flex items-center justify-center text-blueprint-emerald flex-shrink-0">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div className="truncate">
+                    <div className="text-xs font-semibold text-blueprint-primary truncate">
+                      {analysis.file_name}
+                    </div>
+                    <div className="text-[10px] font-mono text-blueprint-muted flex items-center gap-1.5">
+                      <span>{file ? formatFileSize(file.size) : 'Ready'}</span>
+                      <span>·</span>
+                      <span className="text-blueprint-emerald">✓ Text Extracted</span>
+                    </div>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-blueprint-raised border border-blueprint-border text-blueprint-brass flex-shrink-0">
+                  {Math.round(analysis.classification.confidence * 100)}% Match
+                </span>
+              </div>
+
               <div className="p-3.5 rounded border border-blueprint-border bg-blueprint-surface space-y-3">
                 <div className="flex items-center justify-between text-[11px] font-mono">
                   <span className="text-blueprint-brass font-semibold flex items-center gap-1.5">
@@ -300,7 +337,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                     UNIVERSAL DOCUMENT TAGGING
                   </span>
                   <span className="text-blueprint-muted">
-                    AI Match: {Math.round(analysis.classification.confidence * 100)}%
+                    Auto-classified by AI
                   </span>
                 </div>
 
@@ -412,7 +449,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               <button
                 onClick={handleConfirm}
                 disabled={isSaving}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded bg-blueprint-primary hover:bg-white text-blueprint-canvas font-medium text-xs transition duration-150 active:translate-y-px disabled:opacity-50"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded bg-blueprint-primary hover:bg-white text-blueprint-canvas font-semibold text-xs transition active:scale-[0.98] disabled:opacity-50 shadow-sm"
               >
                 {isSaving ? (
                   <>
@@ -443,6 +480,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     </div>
   );
 };
+
 
 
 
