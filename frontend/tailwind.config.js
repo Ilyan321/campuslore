@@ -8,25 +8,30 @@ export default {
     extend: {
       colors: {
         blueprint: {
-          canvas: "#0B1118",
-          surface: "#101923",
-          raised: "#162230",
-          subtle: "#1C2B3C",
-          border: "#1F3044",
-          borderLight: "#2D425C",
-          primary: "#E6EDF3",
-          secondary: "#8D9FA7",
-          muted: "#5A7182",
-          brass: "#D97706",
-          brassHover: "#B45309",
-          cobalt: "#2563EB",
-          cobaltHover: "#1D4ED8",
+          canvas: "#0A0E17",
+          surface: "#111622",
+          raised: "#171F30",
+          subtle: "#1F2A40",
+          border: "#232F46",
+          borderLight: "#354564",
+          primary: "#F1F5F9",
+          secondary: "#94A3B8",
+          muted: "#64748B",
+          brass: "#F59E0B",
+          brassHover: "#D97706",
+          brassLight: "#FEF3C7",
+          cobalt: "#3B82F6",
+          cobaltHover: "#2563EB",
+          cobaltLight: "#DBEAFE",
           emerald: "#10B981",
-          ruby: "#EF4444"
+          emeraldLight: "#D1FAE5",
+          ruby: "#EF4444",
+          violet: "#8B5CF6",
+          cyan: "#06B6D4"
         }
       },
       fontFamily: {
-        sans: ['Inter', 'Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       }
     },
