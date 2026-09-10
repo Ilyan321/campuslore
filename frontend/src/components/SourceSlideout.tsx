@@ -24,12 +24,10 @@ export const SourceSlideout: React.FC<SourceSlideoutProps> = ({
   const [loadingFull, setLoadingFull] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  if (!isOpen || sources.length === 0) return null;
-
-  const currentSource = sources[activeSourceIndex] || sources[0];
+  const currentSource = sources && sources.length > 0 ? (sources[activeSourceIndex] || sources[0]) : null;
 
   useEffect(() => {
-    if (viewMode === 'full' && currentSource.file_name) {
+    if (isOpen && viewMode === 'full' && currentSource?.file_name) {
       setLoadingFull(true);
       fetchFullNoteContent(currentSource.file_name)
         .then((data) => {
@@ -40,7 +38,7 @@ export const SourceSlideout: React.FC<SourceSlideoutProps> = ({
           setLoadingFull(false);
         });
     }
-  }, [viewMode, currentSource.file_name]);
+  }, [isOpen, viewMode, currentSource?.file_name]);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -48,7 +46,9 @@ export const SourceSlideout: React.FC<SourceSlideoutProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const rawUrl = getRawNoteUrl(currentSource.file_name);
+  if (!isOpen || !sources || sources.length === 0 || !currentSource) return null;
+
+  const rawUrl = getRawNoteUrl(currentSource.file_name || '');
 
   return (
     <div className="fixed inset-y-0 right-0 z-40 w-full sm:w-[580px] blueprint-panel border-l border-blueprint-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
