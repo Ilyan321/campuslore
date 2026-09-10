@@ -25,7 +25,51 @@ export const DEFAULT_COURSES: Course[] = [
       { week: 2, core_topic: "OSI 7-Layer Architecture & TCP/IP", grounding_keywords: ["osi", "transport", "network", "datalink"] },
       { week: 5, core_topic: "IP Addressing, CIDR & Subnetting", grounding_keywords: ["ipv4", "cidr", "subnet mask", "usable hosts"] },
       { week: 9, core_topic: "Routing Protocols (OSPF & RIP)", grounding_keywords: ["routing", "ospf", "rip", "distance vector"] },
-      { week: 11, core_topic: "Transport Layer: TCP vs UDP Handshake", grounding_keywords: ["tcp", "udp", "three way handshake", "syn ack"] }
+      { week: 11, core_topic: "Transport Layer: TCP vs UDP Handshake", grounding_keywords: ["tcp", "udp", "three way handshake", "syn ack"] },
+      { week: 14, core_topic: "Application Layer Protocols (HTTP, DNS, DHCP)", grounding_keywords: ["http", "https", "dns", "dhcp"] }
+    ]
+  },
+  {
+    course_id: "CSE-310",
+    course_name: "Operating Systems",
+    department: "Computer Systems Engineering",
+    syllabus_timeline: [
+      { week: 3, core_topic: "CPU Scheduling (FCFS, SJF, Round Robin)", grounding_keywords: ["scheduling", "round robin", "fcfs", "sjf", "gantt chart"] },
+      { week: 6, core_topic: "Process Synchronization, Mutex & Semaphores", grounding_keywords: ["synchronization", "mutex", "semaphore", "critical section", "race condition"] },
+      { week: 8, core_topic: "Deadlocks & Banker's Safety Algorithm", grounding_keywords: ["deadlock", "banker", "resource allocation", "safe state"] },
+      { week: 12, core_topic: "Virtual Memory, Paging & Page Replacement", grounding_keywords: ["paging", "virtual memory", "tlb", "lru", "page fault"] }
+    ]
+  },
+  {
+    course_id: "CSE-315",
+    course_name: "Database Systems & SQL",
+    department: "Computer Systems Engineering",
+    syllabus_timeline: [
+      { week: 3, core_topic: "Relational Algebra & Advanced SQL Queries", grounding_keywords: ["relational algebra", "sql", "join", "group by", "having"] },
+      { week: 6, core_topic: "Database Normalization (1NF, 2NF, 3NF, BCNF)", grounding_keywords: ["normalization", "1nf", "2nf", "3nf", "bcnf", "dependency"] },
+      { week: 10, core_topic: "Transactions, ACID & Concurrency Control (2PL)", grounding_keywords: ["transaction", "acid", "2pl", "locking", "wal", "isolation"] },
+      { week: 13, core_topic: "Database Indexing & B+ Trees vs Hash Index", grounding_keywords: ["indexing", "b+ tree", "hash index", "clustered"] }
+    ]
+  },
+  {
+    course_id: "CSE-204",
+    course_name: "Digital Logic & Computer Architecture",
+    department: "Computer Systems Engineering",
+    syllabus_timeline: [
+      { week: 2, core_topic: "Boolean Algebra & Karnaugh Maps (K-Maps)", grounding_keywords: ["boolean algebra", "k map", "sop", "pos", "dont care"] },
+      { week: 5, core_topic: "Sequential Circuits & Flip-Flops (SR, JK, D, T)", grounding_keywords: ["flip flop", "jk", "sr latch", "d flip flop", "race around"] },
+      { week: 9, core_topic: "CPU Pipelining & Pipeline Hazards", grounding_keywords: ["pipelining", "hazard", "data forwarding", "stall", "cpi"] },
+      { week: 12, core_topic: "Cache Memory Mapping (Direct, Associative)", grounding_keywords: ["cache memory", "direct mapped", "associative", "hit", "miss"] }
+    ]
+  },
+  {
+    course_id: "MATH-201",
+    course_name: "Linear Algebra & Applied Mathematics",
+    department: "Basic Sciences & Humanities",
+    syllabus_timeline: [
+      { week: 2, core_topic: "Matrices, Gaussian Elimination & Linear Systems", grounding_keywords: ["matrix", "gaussian elimination", "row echelon", "rank", "determinant"] },
+      { week: 6, core_topic: "Vector Spaces, Linear Independence & Basis", grounding_keywords: ["vector space", "linear independence", "basis", "dimension", "null space"] },
+      { week: 10, core_topic: "Eigenvalues, Eigenvectors & Diagonalization", grounding_keywords: ["eigenvalue", "eigenvector", "characteristic equation", "diagonalization"] }
     ]
   }
 ];

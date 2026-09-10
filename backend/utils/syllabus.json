@@ -36,7 +36,7 @@
       },
       {
         "week": 14,
-        "core_topic": "Sorting and Searching Algorithms & Time Complexity",
+        "core_topic": "Sorting, Searching & Time Complexity",
         "grounding_keywords": ["quicksort", "mergesort", "binary search", "big o notation", "pivot", "divide and conquer", "time complexity"]
       }
     ]
@@ -58,7 +58,7 @@
       },
       {
         "week": 9,
-        "core_topic": "Routing Protocols: Distance Vector vs Link State (OSPF & RIP)",
+        "core_topic": "Routing Protocols (OSPF & RIP)",
         "grounding_keywords": ["routing", "router", "distance vector", "link state", "rip", "ospf", "hop count", "dijkstra algorithm", "routing table", "convergence"]
       },
       {
@@ -68,8 +68,111 @@
       },
       {
         "week": 14,
-        "core_topic": "Application Layer Protocols (HTTP, DNS, DHCP) & Network Security",
+        "core_topic": "Application Layer Protocols (HTTP, DNS, DHCP) & Security",
         "grounding_keywords": ["http", "https", "dns resolution", "dhcp dora", "socket", "tls ssl", "firewall", "nat"]
+      }
+    ]
+  },
+  {
+    "course_id": "CSE-310",
+    "course_name": "Operating Systems",
+    "department": "Computer Systems Engineering",
+    "syllabus_timeline": [
+      {
+        "week": 3,
+        "core_topic": "CPU Scheduling Algorithms (FCFS, SJF, Round Robin)",
+        "grounding_keywords": ["cpu scheduling", "round robin", "fcfs", "shortest job first", "gantt chart", "waiting time", "turnaround time", "time quantum", "context switch"]
+      },
+      {
+        "week": 6,
+        "core_topic": "Process Synchronization, Mutex & Semaphores",
+        "grounding_keywords": ["process synchronization", "critical section", "mutex", "semaphore", "wait signal", "race condition", "dining philosophers", "peterson solution"]
+      },
+      {
+        "week": 8,
+        "core_topic": "Deadlocks & Banker's Safety Algorithm",
+        "grounding_keywords": ["deadlock", "banker algorithm", "resource allocation graph", "mutual exclusion", "hold and wait", "circular wait", "safe state", "need matrix"]
+      },
+      {
+        "week": 12,
+        "core_topic": "Virtual Memory, Paging & Page Replacement (LRU, FIFO)",
+        "grounding_keywords": ["virtual memory", "paging", "page table", "tlb", "page fault", "lru", "fifo page replacement", "belady anomaly", "thrashing"]
+      }
+    ]
+  },
+  {
+    "course_id": "CSE-315",
+    "course_name": "Database Systems & SQL",
+    "department": "Computer Systems Engineering",
+    "syllabus_timeline": [
+      {
+        "week": 3,
+        "core_topic": "Relational Algebra & Advanced SQL Queries",
+        "grounding_keywords": ["relational algebra", "select project join", "sql", "inner join", "left outer join", "group by", "having", "aggregate functions", "subquery"]
+      },
+      {
+        "week": 6,
+        "core_topic": "Database Normalization (1NF, 2NF, 3NF & BCNF)",
+        "grounding_keywords": ["normalization", "1nf", "2nf", "3nf", "bcnf", "functional dependency", "partial dependency", "transitive dependency", "candidate key", "lossless decomposition"]
+      },
+      {
+        "week": 10,
+        "core_topic": "Transactions, ACID Properties & Concurrency Control (2PL)",
+        "grounding_keywords": ["transaction", "acid properties", "atomicity", "consistency", "isolation", "durability", "concurrency control", "two phase locking", "2pl", "write ahead logging", "wal", "dirty read"]
+      },
+      {
+        "week": 13,
+        "core_topic": "Database Indexing & B+ Trees vs Hash Index",
+        "grounding_keywords": ["indexing", "b+ tree", "hash index", "clustered index", "non-clustered index", "query optimization", "disk io", "range search"]
+      }
+    ]
+  },
+  {
+    "course_id": "CSE-204",
+    "course_name": "Digital Logic & Computer Architecture",
+    "department": "Computer Systems Engineering",
+    "syllabus_timeline": [
+      {
+        "week": 2,
+        "core_topic": "Boolean Algebra & Karnaugh Maps (K-Maps)",
+        "grounding_keywords": ["boolean algebra", "k map", "karnaugh map", "sop", "pos", "dont care", "gray code", "logic simplification", "minterms", "maxterms"]
+      },
+      {
+        "week": 5,
+        "core_topic": "Sequential Circuits & Flip-Flops (SR, JK, D, T)",
+        "grounding_keywords": ["flip flop", "jk flip flop", "sr latch", "d flip flop", "t flip flop", "clock trigger", "race around condition", "master slave", "state diagram"]
+      },
+      {
+        "week": 9,
+        "core_topic": "CPU Pipelining & Pipeline Hazards",
+        "grounding_keywords": ["pipelining", "instruction pipeline", "structural hazard", "data hazard", "control hazard", "branch prediction", "data forwarding", "pipeline stall", "cpi"]
+      },
+      {
+        "week": 12,
+        "core_topic": "Cache Memory Mapping (Direct, Associative, Set-Associative)",
+        "grounding_keywords": ["cache memory", "direct mapped", "fully associative", "set associative", "cache hit", "cache miss", "tag index offset", "write through", "write back"]
+      }
+    ]
+  },
+  {
+    "course_id": "MATH-201",
+    "course_name": "Linear Algebra & Applied Mathematics",
+    "department": "Basic Sciences & Humanities",
+    "syllabus_timeline": [
+      {
+        "week": 2,
+        "core_topic": "Matrices, Gaussian Elimination & System of Linear Equations",
+        "grounding_keywords": ["matrix", "gaussian elimination", "row echelon form", "reduced row echelon form", "determinant", "rank of matrix", "linear system", "augmented matrix"]
+      },
+      {
+        "week": 6,
+        "core_topic": "Vector Spaces, Linear Independence & Basis/Dimension",
+        "grounding_keywords": ["vector space", "linear independence", "span", "basis", "dimension", "null space", "column space", "rank nullity theorem"]
+      },
+      {
+        "week": 10,
+        "core_topic": "Eigenvalues, Eigenvectors & Matrix Diagonalization",
+        "grounding_keywords": ["eigenvalue", "eigenvector", "characteristic equation", "determinant a minus lambda i", "diagonalization", "spectral theorem", "pca"]
       }
     ]
   }
