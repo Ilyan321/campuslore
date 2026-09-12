@@ -174,8 +174,8 @@ Understands and adapts to the natural conversational style of Pakistani universi
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/Ilyan321/campuslore.git
-cd campuslore
+git clone https://github.com/Ilyan321/campusvault.git
+cd campusvault
 ```
 
 ---
