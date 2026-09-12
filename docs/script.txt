@@ -1,0 +1,110 @@
+CampusVault — Presentation Content
+===================================
+
+PROJECT NAME
+------------
+CampusVault
+Tagline: Grounded Knowledge Engine — Agentic RAG for University Exam Prep
+Live URL: batchmate.ilyankhan.tech
+
+
+TEAM MEMBERS
+------------
+1. Shahzaib Ali
+2. Ali Hussain
+3. Aqsa Sarfaraz
+4. Arfa Rehman
+5. Zainab Faiz
+6. Warda Nadeem
+
+
+PROBLEM STATEMENT
+-----------------
+Every semester, engineering students fail exams not because they don't study — but because the AI tools they use hallucinate wrong answers.
+
+- ChatGPT and other generic AI models make up formulas, give wrong algorithm traces, and have zero knowledge of your university syllabus or professor's grading rubric.
+- They give no citations — students cannot verify if the answer is mathematically or conceptually correct.
+- Basic RAG (Retrieval-Augmented Generation) doesn't fix this either — it just does a naive keyword search and blindly pastes whatever snippet it finds.
+- Students are buried under 400+ pages of unstructured PDFs, WhatsApp drives, and scattered handwritten notes.
+- Senior notes and solved papers disappear every year when students graduate.
+- There is no 24/7 academic assistant grounded in actual course material.
+
+
+SOLUTION & WHAT MAKES IT AGENTIC RAG
+------------------------------------
+CampusVault is an Agentic RAG system built specifically for engineering university students. It answers exam questions with verified citations from real peer notes — zero hallucinations.
+
+Key Agentic RAG Capabilities:
+
+1. Agentic Query Router:
+   When a student asks a question, the system doesn't just do a flat vector search. It acts as an intelligent planner — identifying the exact subject (OS, Networks, DSA, DBMS, Digital Logic, Math), determining the curriculum week, and selecting the optimal retrieval strategy.
+
+2. Confidence Gate (Threshold >= 0.65):
+   After retrieval, the system checks the similarity confidence score. If it falls below 0.65, the system explicitly informs the student: "Operating in General AI Mode — could not find verified peer notes for this." It never pretends to be grounded when it lacks evidence.
+
+3. AST-Aware Chunking:
+   During note ingestion, it does not blindly cut text every 500 characters. It uses AST (Abstract Syntax Tree) parsing to respect code function/class boundaries in C++/Python and equation blocks in LaTeX so math derivations are never split mid-step.
+
+4. Peer-Grounded Citations & Source Inspection:
+   Every answer highlights the exact senior note or lecture chunk used, showing the match percentage so students can inspect and verify the source.
+
+5. 16-Week Curriculum Timeline:
+   Organized across a 16-week semester timeline across 6 core engineering subjects for targeted exam prep.
+
+6. Real-Time Token Streaming:
+   Streams responses token-by-token in under 500ms using Server-Sent Events (SSE).
+
+7. KaTeX LaTeX Math Rendering:
+   Equations, binary subnet math, and algorithmic matrices render in clean mathematical notation.
+
+
+KEY FEATURES
+------------
+- Multi-subject autonomous routing across 6 engineering disciplines.
+- 1-click high-yield exam prompt launchpad for instant topic drills.
+- Multi-format ingestion (PDF, C++, Python, Markdown) with automated AST chunking.
+- Transparent similarity match scores with direct peer note inspection.
+- Multi-turn session persistence and context awareness.
+- Full mobile and desktop responsive UI.
+- Honest fallback flagging when no verified curriculum notes match.
+
+
+TECHNOLOGY STACK
+----------------
+- Frontend: React, TypeScript, Vite, Tailwind CSS
+- Backend: FastAPI (Python)
+- LLM Inference: Groq Llama 3.3 70B (High-throughput SSE token stream)
+- Embedding Engine: FastEmbed (ONNX runtime, 384-dimensional dense vectors)
+- Vector Database: PostgreSQL with pgvector extension (Cosine similarity & hybrid search)
+- Math & Code Rendering: KaTeX & Prism syntax highlighting
+- Cloud Storage: Supabase
+- Deployment & Hosting: Vercel (Frontend), Render (Backend)
+
+
+HIGH-LEVEL ARCHITECTURE (HOW SYSTEM COMPONENTS COMMUNICATE)
+-----------------------------------------------------------
+Step-by-step communication flow:
+
+1. Student enters a query in the React UI (Vercel).
+2. React frontend sends an HTTPS request to the FastAPI backend (Render).
+3. Backend invokes the Agentic Query Router to classify the subject, semester week, and retrieval plan.
+4. FastEmbed generates a 384-dimensional vector locally via ONNX runtime (no external embedding API call, no per-token API cost, sub-10ms latency).
+5. Vector is queried against PostgreSQL pgvector with hybrid dense + keyword search (sub-20ms).
+6. Confidence Gate checks score:
+   - If >= 0.65 -> Grounded Mode (includes peer context & citations).
+   - If < 0.65 -> General Mode (explicitly flagged).
+7. Context + strict prompt guidelines are dispatched to Groq Llama 3.3 70B.
+8. Groq generates and streams tokens back to FastAPI, which forwards them via Server-Sent Events (SSE) to the frontend in real-time.
+9. Frontend renders LaTeX formulas with KaTeX and provides an interactive source drawer.
+
+
+DEMO VIDEO NOTE
+---------------
+"A full live demo showing the Agentic RAG pipeline in action, live routing, source note inspection, and mobile responsiveness is showcased in our separate demo video."
+
+
+SPEAKER NOTES / PRESENTATION TIPS
+---------------------------------
+- Target time: 4 to 5 minutes max (do not exceed 5 minutes).
+- Highlight the term "Agentic RAG" clearly throughout (not just generic RAG).
+- Emphasize the Confidence Gate (threshold >= 0.65) and AST-aware chunking as the core engineering differentiators.
